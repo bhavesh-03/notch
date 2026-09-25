@@ -19,8 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         
         let notchedScreen = NSScreen.screens.first { $0.safeAreaInsets.top > 0}
-        guard let screen = notchedScreen ?? NSScreen.main,
-              let geometry = NotchGeometry(screen: screen) else { return }
+        guard let screen = notchedScreen ?? NSScreen.main else { return }
+        let geometry = NotchGeometry(screen: screen)
         
         let panel = NotchPanel(contentRect: geometry.panelRect)
         panel.contentView = NSHostingView(rootView: ContentView(viewModel: viewModel))

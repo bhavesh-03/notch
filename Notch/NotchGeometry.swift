@@ -12,8 +12,11 @@ struct NotchGeometry {
     static let expandedSize = CGSize(width: 400, height: 150)
     let screenFrame: CGRect
     let notchRect: CGRect
+    enum Kind { case hardware, virtual }
+    let kind: Kind
+    static let virtualNotchSize = CGSize(width: 180, height: 24)
     
-    init(screenFrame: CGRect, leftAreaWidth: CGFloat, rightAreaWidth: CGFloat, notchHeight: CGFloat) {
+    init(screenFrame: CGRect, leftAreaWidth: CGFloat, rightAreaWidth: CGFloat, notchHeight: CGFloat, kind: Kind) {
         self.screenFrame = screenFrame
         self.notchRect = CGRect(
             x: screenFrame.minX + leftAreaWidth,
@@ -21,16 +24,28 @@ struct NotchGeometry {
             width: screenFrame.width - leftAreaWidth - rightAreaWidth,
             height: notchHeight
         )
+        self.kind = kind
     }
     
-    init?(screen: NSScreen) {
-        guard let left = screen.auxiliaryTopLeftArea,
+    init(screen: NSScreen) {
+        if let left = screen.auxiliaryTopLeftArea,
               let right = screen.auxiliaryTopRightArea,
-              screen.safeAreaInsets.top > 0 else { return nil }
-        self.init(screenFrame: screen.frame,
-                  leftAreaWidth: left.width,
-                  rightAreaWidth: right.width,
-                  notchHeight: screen.safeAreaInsets.top)
+           screen.safeAreaInsets.top > 0 {
+            self.init(screenFrame: screen.frame,
+                      leftAreaWidth: left.width,
+                      rightAreaWidth: right.width,
+                      notchHeight: screen.safeAreaInsets.top,
+                      kind: .hardware
+            )
+        } else {
+            var sideWidth = (screen.frame.width - 180) / 2
+            self.init(screenFrame: screen.frame,
+                      leftAreaWidth: sideWidth,
+                      rightAreaWidth: sideWidth,
+                      notchHeight: Self.virtualNotchSize.height,
+                      kind: .virtual
+            )
+        }
     }
     
     var panelRect: CGRect {
