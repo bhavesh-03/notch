@@ -66,7 +66,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let panel else { return }
         
         let mouse = NSEvent.mouseLocation
-        let activeRect = viewModel.isExpanded ? panel.frame : notchRect
+        let activeRect = (viewModel.isExpanded ? panel.frame : notchRect)
+            .insetBy(dx: 0, dy: -1)
         
         if activeRect.contains(mouse) {
             viewModel.expand()
