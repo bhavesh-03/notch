@@ -27,34 +27,81 @@ struct ContentView: View {
                     collapsedContent
                 }
             }
+            .animation(.snappy, value: battery)
             .foregroundStyle(.white)
             .clipShape(notchShape)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
+
+    private var battery: BatteryStatus? { viewModel.battery.status }
 
     @ViewBuilder
     private var collapsedContent: some View {
         switch geometry.kind {
         case .hardware:
             HStack(spacing: 0) {
-                Image(systemName: "battery.100")
-                    .frame(width: NotchGeometry.earWidth)
+                Group {
+                    if let battery {
+                        batteryIcon(battery)
+                    }
+                }
+                .frame(width: NotchGeometry.earWidth)
+
                 Spacer()
-                Text("100%")
-                    .font(.caption2)
-                    .frame(width: NotchGeometry.earWidth)
+
+                Group {
+                    if let battery {
+                        batteryPercentage(battery)
+                            .font(.caption2)
+                    }
+                }
+                .frame(width: NotchGeometry.earWidth)
             }
         case .virtual:
-            Image(systemName: "battery.100")
+            if let battery {
+                batteryIcon(battery)
+            }
         }
     }
 
     private var expandedContent: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "battery.100")
-            Text("Hello from inside the Notch")
+        HStack(spacing: 12) {
+            if let battery {
+                batteryIcon(battery)
+                    .font(.title)
+                VStack(alignment: .leading, spacing: 2) {
+                    batteryPercentage(battery)
+                        .font(.title3.bold())
+                    Text(statusText(for: battery))
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            } else {
+                Text("No battery")
+            }
         }
         .transition(.opacity)
+    }
+
+    private func batteryIcon(_ battery: BatteryStatus) -> some View {
+        Image(systemName: battery.symbolName)
+            .contentTransition(.symbolEffect(.replace))
+    }
+
+    private func batteryPercentage(_ battery: BatteryStatus) -> some View {
+        Text("\(battery.level)%")
+            .monospacedDigit()
+            .contentTransition(.numericText())
+    }
+
+    private func statusText(for battery: BatteryStatus) -> String {
+        if battery.isCharging {
+            "Charging"
+        } else if battery.isPluggedIn {
+            "Plugged in"
+        } else {
+            "On battery"
+        }
     }
 }
 

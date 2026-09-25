@@ -2,12 +2,14 @@ import SwiftUI
 
 @Observable
 final class NotchViewModel {
+    
     var isExpanded = false {
         didSet { onExpandedChange?(isExpanded) }
     }
     @ObservationIgnored var onExpandedChange: ((Bool) -> Void)?
     private var collapseTask : Task<Void, Never>?
     var geometry: NotchGeometry
+    let battery = BatteryMonitor()
     
     init(geometry: NotchGeometry) {
         self.geometry = geometry
