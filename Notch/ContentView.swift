@@ -8,17 +8,17 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var isExpanded = false;
+    @State private var isExpanded = false
     var body: some View {
-        VStack {
-            RoundedRectangle(cornerRadius: 30)
+            UnevenRoundedRectangle(bottomLeadingRadius: 30, bottomTrailingRadius: 30)
                 .fill(.black)
-                .frame(width: isExpanded ? 400 : 200,
-                       height: isExpanded ? 150 : 32)
+                .frame(width: isExpanded ? 400 : 179,
+                       height: isExpanded ? 150 : 32,
+                )
                 .overlay {
                     HStack(spacing: 8) {
                         Image(systemName: "battery.100")
-                        if (isExpanded) {
+                        if isExpanded {
                             Text("Hello from inside the Notch")
                                 .transition(.opacity.combined(with: .scale(scale: 0.8)))
                         }
@@ -30,9 +30,8 @@ struct ContentView: View {
                         isExpanded.toggle()
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .padding()
-    }
 }
 
 #Preview {
