@@ -8,32 +8,42 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var isExpanded = false
+    
+    let viewModel: NotchViewModel
+    private var notchShape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            bottomLeadingRadius: viewModel.isExpanded ? 24 : 10,
+            bottomTrailingRadius: viewModel.isExpanded ? 24 : 10
+        )
+    }
+    
     var body: some View {
-        UnevenRoundedRectangle(bottomLeadingRadius: isExpanded ? 24 : 10, bottomTrailingRadius: isExpanded ? 24 : 10)
-            .fill(.black)
-            .frame(width: isExpanded ? 400 : 179,
-                   height: isExpanded ? 150 : 32
+        notchShape.fill(.black)
+            .frame(width: viewModel.isExpanded ? 400 : 179,
+                   height: viewModel.isExpanded ? 150 : 32
             )
             .overlay {
                 HStack(spacing: 8) {
                     Image(systemName: "battery.100")
-                    if isExpanded {
+                    if viewModel.isExpanded {
                         Text("Hello from inside the Notch")
                             .transition(.opacity.combined(with: .scale(scale: 0.8)))
                     }
                 }
                 .foregroundStyle(.white)
             }
-            .onTapGesture {
-                withAnimation(.snappy) {
-                    isExpanded.toggle()
-                }
-            }
+            .clipShape(notchShape)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(viewModel: NotchViewModel())
+}
+
+#Preview("Expanded") {
+    let model = NotchViewModel()
+    model.isExpanded = true
+    return ContentView(viewModel: model)
+        .frame(width: 400, height: 150)
 }
