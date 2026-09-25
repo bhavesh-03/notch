@@ -13,13 +13,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: NotchPanel?
     private var viewModel: NotchViewModel?
     private var monitors: [Any] = []
-    
+    private var screenChangeTask: Task<Void, Never>?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         
-        let notchedScreen = NSScreen.screens.first { $0.safeAreaInsets.top > 0}
-        guard let screen = notchedScreen ?? NSScreen.main else { return }
-        let geometry = NotchGeometry(screen: screen)
+        guard let geometry = Self.currentGeometry() else { return }
+        
         let viewModel = NotchViewModel(geometry: geometry)
         self.viewModel = viewModel
         let panel = NotchPanel(contentRect: geometry.panelRect)
@@ -46,6 +45,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             monitors.append(local)
         }
         
+        screenChangeTask = Task { [weak self] in
+            for await _ in NotificationCenter.default.notifications(
+                named: NSApplication.didChangeScreenParametersNotification
+            ) {
+                self?.screensDidChange()
+            }
+        }
+        
     }
     
     private func handleMouseMoved() {
@@ -62,4 +69,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
     }
+    
+    private static func currentGeometry() -> NotchGeometry? {
+        let notchedScreen = NSScreen.screens.first { $0.safeAreaInsets.top > 0 }
+        guard let screen = notchedScreen ?? NSScreen.main else { return nil }
+        return NotchGeometry(screen: screen)
+    }
+    
+    private func screensDidChange() {
+        guard let panel, let viewModel, let geometry = Self.currentGeometry() else { return }
+        viewModel.geometry = geometry
+        panel.setFrame(geometry.panelRect, display: true)
+    }
+    
 }
