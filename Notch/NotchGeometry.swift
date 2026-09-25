@@ -38,7 +38,7 @@ struct NotchGeometry {
                       kind: .hardware
             )
         } else {
-            var sideWidth = (screen.frame.width - 180) / 2
+            let sideWidth = (screen.frame.width - Self.virtualNotchSize.width) / 2
             self.init(screenFrame: screen.frame,
                       leftAreaWidth: sideWidth,
                       rightAreaWidth: sideWidth,
