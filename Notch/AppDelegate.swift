@@ -19,16 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         
         let notchedScreen = NSScreen.screens.first { $0.safeAreaInsets.top > 0}
-        guard let screen = notchedScreen ?? NSScreen.main else { return }
+        guard let screen = notchedScreen ?? NSScreen.main,
+              let geometry = NotchGeometry(screen: screen) else { return }
         
-        let panelSize = CGSize(width: 400, height: 150)
-        
-        let origin = CGPoint(
-            x: screen.frame.midX - panelSize.width / 2,
-            y: screen.frame.maxY - panelSize.height
-        )
-        
-        let panel = NotchPanel(contentRect: CGRect(origin: origin, size: panelSize))
+        let panel = NotchPanel(contentRect: geometry.panelRect)
         panel.contentView = NSHostingView(rootView: ContentView(viewModel: viewModel))
         panel.ignoresMouseEvents = true
         panel.orderFrontRegardless()
@@ -37,14 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel?.ignoresMouseEvents = !expanded
         }
         
-        let notchSize = CGSize(width: 179, height: 32)
-        notchRect = CGRect(
-            x: screen.frame.midX - notchSize.width / 2,
-            y: screen.frame.maxY - notchSize.height,
-            width: notchSize.width,
-            height: notchSize.height
-        )
-        
+        notchRect = geometry.notchRect
         self.panel = panel
         
         if let global = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: { [weak self] _ in
