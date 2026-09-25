@@ -11,9 +11,8 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private var panel: NotchPanel?
-    private let viewModel = NotchViewModel()
+    private var viewModel: NotchViewModel?
     private var monitors: [Any] = []
-    private var notchRect: CGRect = .zero
     
     
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -21,7 +20,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let notchedScreen = NSScreen.screens.first { $0.safeAreaInsets.top > 0}
         guard let screen = notchedScreen ?? NSScreen.main else { return }
         let geometry = NotchGeometry(screen: screen)
-        
+        let viewModel = NotchViewModel(geometry: geometry)
+        self.viewModel = viewModel
         let panel = NotchPanel(contentRect: geometry.panelRect)
         panel.contentView = NSHostingView(rootView: ContentView(viewModel: viewModel))
         panel.ignoresMouseEvents = true
@@ -31,7 +31,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel?.ignoresMouseEvents = !expanded
         }
         
-        notchRect = geometry.notchRect
         self.panel = panel
         
         if let global = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: { [weak self] _ in
@@ -50,10 +49,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func handleMouseMoved() {
-        guard let panel else { return }
+        guard let panel, let viewModel else { return }
         
         let mouse = NSEvent.mouseLocation
-        let activeRect = (viewModel.isExpanded ? panel.frame : notchRect)
+        let activeRect = (viewModel.isExpanded ? panel.frame : viewModel.geometry.collapsedRect)
             .insetBy(dx: 0, dy: -1)
         
         if activeRect.contains(mouse) {

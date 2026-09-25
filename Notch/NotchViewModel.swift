@@ -7,6 +7,11 @@ final class NotchViewModel {
     }
     @ObservationIgnored var onExpandedChange: ((Bool) -> Void)?
     private var collapseTask : Task<Void, Never>?
+    var geometry: NotchGeometry
+    
+    init(geometry: NotchGeometry) {
+        self.geometry = geometry
+    }
     
     func expand() {
         collapseTask?.cancel()

@@ -15,6 +15,14 @@ struct NotchGeometry {
     enum Kind { case hardware, virtual }
     let kind: Kind
     static let virtualNotchSize = CGSize(width: 180, height: 24)
+    static let earWidth: CGFloat = 40
+    
+    var collapsedRect: CGRect {
+        switch kind {
+        case .hardware: notchRect.insetBy(dx: -Self.earWidth, dy: 0)
+        case .virtual:  notchRect
+        }
+    }
     
     init(screenFrame: CGRect, leftAreaWidth: CGFloat, rightAreaWidth: CGFloat, notchHeight: CGFloat, kind: Kind) {
         self.screenFrame = screenFrame
