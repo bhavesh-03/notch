@@ -10,28 +10,28 @@ import SwiftUI
 struct ContentView: View {
     @State private var isExpanded = false
     var body: some View {
-            UnevenRoundedRectangle(bottomLeadingRadius: 30, bottomTrailingRadius: 30)
-                .fill(.black)
-                .frame(width: isExpanded ? 400 : 179,
-                       height: isExpanded ? 150 : 32,
-                )
-                .overlay {
-                    HStack(spacing: 8) {
-                        Image(systemName: "battery.100")
-                        if isExpanded {
-                            Text("Hello from inside the Notch")
-                                .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                        }
-                    }
-                    .foregroundStyle(.white)
-                }
-                .onTapGesture {
-                    withAnimation(.snappy) {
-                        isExpanded.toggle()
+        UnevenRoundedRectangle(bottomLeadingRadius: isExpanded ? 24 : 10, bottomTrailingRadius: isExpanded ? 24 : 10)
+            .fill(.black)
+            .frame(width: isExpanded ? 400 : 179,
+                   height: isExpanded ? 150 : 32
+            )
+            .overlay {
+                HStack(spacing: 8) {
+                    Image(systemName: "battery.100")
+                    if isExpanded {
+                        Text("Hello from inside the Notch")
+                            .transition(.opacity.combined(with: .scale(scale: 0.8)))
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        }
+                .foregroundStyle(.white)
+            }
+            .onTapGesture {
+                withAnimation(.snappy) {
+                    isExpanded.toggle()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
 }
 
 #Preview {
