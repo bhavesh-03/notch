@@ -12,6 +12,8 @@ extension CalendarMonitor: NotchModule {
         switch placement {
         case .expanded:
             CalendarSection(calendar: self)
+        case .headline:
+            EmptyView()
         case .leadingEar, .activityLeading:
             Image(systemName: "calendar")
                 .font(placement == .activityLeading ? .title2 : nil)

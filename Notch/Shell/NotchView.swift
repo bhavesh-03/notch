@@ -12,7 +12,7 @@ struct NotchView: View {
     private var size: CGSize {
         switch viewModel.presentation {
         case .collapsed: geometry.collapsedRect.size
-        case .expanded: NotchGeometry.expandedSize
+        case .expanded: NotchGeometry.expandedSize(withHeadline: viewModel.hasHeadline)
         case .activity: geometry.activitySize
         }
     }
@@ -47,6 +47,7 @@ struct NotchView: View {
                         .transition(NotchMotion.content(reduceMotion: reduceMotion))
                 }
             }
+            .animation(NotchMotion.activityOpen(reduceMotion: reduceMotion), value: viewModel.hasHeadline)
             .foregroundStyle(.white)
             .clipShape(notchShape)
             .contextMenu { appMenu }
@@ -81,6 +82,25 @@ struct NotchView: View {
     }
 
     private var expandedContent: some View {
+        VStack(spacing: 0) {
+            if let headliner = viewModel.modules.headliner {
+                // Clear of the camera band, then the full-width row, then the usual columns.
+                Color.clear.frame(height: geometry.notchRect.height)
+                AnyView(headliner.content(for: .headline))
+                    .frame(height: NotchGeometry.headlineHeight - 8)
+                    .padding(.horizontal, 24)
+                    .transition(NotchMotion.earContent(reduceMotion: reduceMotion))
+                Divider()
+                    .overlay(.white.opacity(0.15))
+                    .padding(.horizontal, 24)
+            }
+            moduleColumns
+                .frame(maxHeight: .infinity)
+        }
+        .transition(.opacity)
+    }
+
+    private var moduleColumns: some View {
         HStack(spacing: 20) {
             let sections = viewModel.modules.filter(\.hasExpandedSection)
             ForEach(sections.indices, id: \.self) { index in
@@ -92,7 +112,6 @@ struct NotchView: View {
                 AnyView(sections[index].content(for: .expanded))
             }
         }
-        .transition(.opacity)
     }
 
     @ViewBuilder

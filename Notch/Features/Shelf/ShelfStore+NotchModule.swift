@@ -10,7 +10,7 @@ extension ShelfStore: NotchModule {
         switch placement {
         case .expanded:
             ShelfSection(shelf: self)
-        case .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail:
+        case .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail, .headline:
             EmptyView()
         }
     }

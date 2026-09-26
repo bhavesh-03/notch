@@ -36,6 +36,7 @@ final class NotchViewModel {
     let shelf = ShelfStore()
     let nowPlaying = NowPlayingMonitor()
     let launchAtLogin = LaunchAtLogin()
+    var hasHeadline: Bool { modules.headliner != nil }
     var modules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying] }
 
     @ObservationIgnored private let reduceMotion: () -> Bool

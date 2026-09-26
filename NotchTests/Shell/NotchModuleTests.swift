@@ -77,4 +77,14 @@ struct ExpandedSectionTests {
     @Test func nowPlayingLivesOnlyInTheEarsForNow() {
         #expect(!NowPlayingMonitor().hasExpandedSection)
     }
+
+    @Test func noModuleClaimsTheHeadlineByDefault() {
+        let modules: [any NotchModule] = [NotchModuleTests.FakeModule("a", priority: 1), NotchModuleTests.FakeModule("b", priority: nil)]
+        #expect(modules.headliner == nil)
+    }
+
+    @Test func nowPlayingHasNoHeadlineWhenNothingIsPlaying() {
+        #expect(!NowPlayingMonitor().hasHeadline)
+        #expect(NotchViewModel(geometry: .previewHardware).hasHeadline == false)
+    }
 }

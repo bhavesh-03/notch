@@ -49,6 +49,32 @@ struct NowPlayingInfoTests {
     }
 }
 
+@MainActor
+struct TrackChangeTests {
+    private func track(_ title: String, by artist: String = "Artist", playing: Bool = true) -> NowPlayingInfo {
+        NowPlayingInfo(title: title, artist: artist, album: "", duration: 200, elapsedTime: 0, playbackRate: playing ? 1 : 0,
+                       timestamp: .now, isPlaying: playing, appName: "YT Music", appBundleIdentifier: "x")
+    }
+
+    @Test func aDifferentSongIsANewTrack() {
+        #expect(track("B").isNewTrack(after: track("A")))
+        #expect(track("A", by: "Other").isNewTrack(after: track("A")))
+    }
+
+    @Test func pauseAndResumeAreNotNewTracks() {
+        #expect(!track("A", playing: false).isNewTrack(after: track("A")))
+        #expect(!track("A").isNewTrack(after: track("A", playing: false)))
+    }
+
+    @Test func theFirstReportIsNotANewTrack() {
+        #expect(!track("A").isNewTrack(after: nil), "e.g. at launch, or after the bridge restarts")
+    }
+
+    @Test func aTrackThatChangedWhilePausedIsNotAnnounced() {
+        #expect(!track("B", playing: false).isNewTrack(after: track("A")))
+    }
+}
+
 /// Runs the real bridge inside the sandboxed app, end to end.
 @MainActor
 struct NowPlayingBridgeProcessTests {

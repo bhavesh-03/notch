@@ -27,6 +27,8 @@ extension TimerController: NotchModule {
                     .font(.caption)
             case .expanded:
                 TimerSection(timer: self)
+            case .headline:
+                EmptyView()
             case .activityLeading:
                 Image(systemName: "timer")
                     .font(.title2)

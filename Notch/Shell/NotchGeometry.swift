@@ -10,6 +10,15 @@ import AppKit
 struct NotchGeometry {
     
     static let expandedSize = CGSize(width: 540, height: 150)
+    /// Extra height for a full-width headline row (the media player) above the module columns.
+    static let headlineHeight: CGFloat = 74
+
+    static func expandedSize(withHeadline: Bool) -> CGSize {
+        withHeadline ? CGSize(width: expandedSize.width, height: expandedSize.height + headlineHeight) : expandedSize
+    }
+
+    /// The panel is sized for the tallest state, so it never resizes; the shape grows inside it.
+    static var panelSize: CGSize { expandedSize(withHeadline: true) }
     static let activityEarWidth: CGFloat = 80
     static let activityDetailHeight: CGFloat = 26
     let screenFrame: CGRect
@@ -68,17 +77,30 @@ struct NotchGeometry {
     /// Where the pointer has to be for the notch to open (or stay open).
     /// A file drag opens it from anywhere over the expanded area, so the user never has to
     /// push against the top edge of the screen, which would trigger Mission Control.
-    func hoverTarget(isExpanded: Bool, isDraggingFile: Bool) -> CGRect {
-        (isExpanded || isDraggingFile ? panelRect : collapsedRect)
-            .insetBy(dx: 0, dy: -1)
+    func hoverTarget(isExpanded: Bool, hasHeadline: Bool = false, isDraggingFile: Bool) -> CGRect {
+        let target: CGRect
+        if isExpanded {
+            target = expandedRect(withHeadline: hasHeadline)
+        } else if isDraggingFile {
+            target = expandedRect(withHeadline: false)
+        } else {
+            target = collapsedRect
+        }
+        return target.insetBy(dx: 0, dy: -1)
+    }
+
+    /// Where the expanded shape actually is: the visible part of the panel.
+    func expandedRect(withHeadline: Bool) -> CGRect {
+        let size = Self.expandedSize(withHeadline: withHeadline)
+        return CGRect(x: notchRect.midX - size.width / 2, y: screenFrame.maxY - size.height, width: size.width, height: size.height)
     }
 
     var panelRect: CGRect {
         CGRect(
-            x: notchRect.midX - Self.expandedSize.width / 2,
-            y: screenFrame.maxY - Self.expandedSize.height,
-            width: Self.expandedSize.width,
-            height: Self.expandedSize.height
+            x: notchRect.midX - Self.panelSize.width / 2,
+            y: screenFrame.maxY - Self.panelSize.height,
+            width: Self.panelSize.width,
+            height: Self.panelSize.height
         )
     }
     

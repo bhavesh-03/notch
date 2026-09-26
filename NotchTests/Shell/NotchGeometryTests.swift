@@ -25,10 +25,9 @@ struct NotchGeometryTests {
 
     @Test func panelIsCenteredOnNotchAndFlushWithTop() {
         let geometry = hardware(screen: airScreen)
-        let size = NotchGeometry.expandedSize
         #expect(geometry.panelRect.midX == geometry.notchRect.midX)
         #expect(geometry.panelRect.maxY == airScreen.maxY)
-        #expect(geometry.panelRect.size == size)
+        #expect(geometry.panelRect.size == NotchGeometry.panelSize)
     }
 
     @Test func screenAwayFromGlobalOriginIsHandled() {
@@ -75,5 +74,27 @@ struct NotchGeometryTests {
         let geometry = hardware(screen: airScreen)
         let topEdge = CGPoint(x: geometry.notchRect.midX, y: airScreen.maxY)
         #expect(geometry.hoverTarget(isExpanded: false, isDraggingFile: false).contains(topEdge))
+    }
+
+    @Test func theHeadlineAddsHeightButNotWidth() {
+        let plain = NotchGeometry.expandedSize(withHeadline: false)
+        let withPlayer = NotchGeometry.expandedSize(withHeadline: true)
+        #expect(withPlayer.width == plain.width)
+        #expect(withPlayer.height == plain.height + NotchGeometry.headlineHeight)
+    }
+
+    @Test func thePanelFitsTheTallestStateSoItNeverResizes() {
+        let geometry = hardware(screen: airScreen)
+        #expect(geometry.panelRect.contains(geometry.expandedRect(withHeadline: true)))
+        #expect(geometry.panelRect.contains(geometry.expandedRect(withHeadline: false)))
+    }
+
+    @Test func hoveringBelowTheVisibleShapeDoesNotKeepItOpen() {
+        let geometry = hardware(screen: airScreen)
+        let inTheEmptyStrip = CGPoint(x: geometry.notchRect.midX, y: airScreen.maxY - NotchGeometry.expandedSize.height - 20)
+
+        #expect(geometry.panelRect.contains(inTheEmptyStrip), "the transparent part of the panel")
+        #expect(!geometry.hoverTarget(isExpanded: true, hasHeadline: false, isDraggingFile: false).contains(inTheEmptyStrip))
+        #expect(geometry.hoverTarget(isExpanded: true, hasHeadline: true, isDraggingFile: false).contains(inTheEmptyStrip))
     }
 }

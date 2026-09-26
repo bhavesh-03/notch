@@ -21,6 +21,13 @@ struct NowPlayingInfo: Equatable, Decodable {
         return duration > 0 ? min(position, duration) : position
     }
 
+    /// True when this is a different track from `previous` and it's playing. Never on the first
+    /// report (e.g. at launch), and never for pause/resume of the same track.
+    func isNewTrack(after previous: NowPlayingInfo?) -> Bool {
+        guard let previous, isPlaying else { return false }
+        return title != previous.title || artist != previous.artist
+    }
+
     /// Decodes one line from the bridge: an info when something is playing, nil when nothing is.
     static func decode(line: Data) throws -> NowPlayingInfo? {
         let decoder = JSONDecoder()

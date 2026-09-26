@@ -5,6 +5,8 @@ import Foundation
 final class NowPlayingMonitor {
     private(set) var info: NowPlayingInfo?
 
+    @ObservationIgnored var onTrackChanged: ((NowPlayingInfo) -> Void)?
+
     @ObservationIgnored private let bridge = NowPlayingBridgeProcess()
     @ObservationIgnored private var restartTask: Task<Void, Never>?
     @ObservationIgnored private var isStarted = false
@@ -15,7 +17,12 @@ final class NowPlayingMonitor {
         isStarted = true
 
         bridge.onUpdate = { [weak self] info in
-            self?.info = info
+            guard let self else { return }
+            let previous = self.info
+            self.info = info
+            if let info, info.isNewTrack(after: previous) {
+                self.onTrackChanged?(info)
+            }
         }
         bridge.onExit = { [weak self] in
             self?.scheduleRestart(libraryURL: libraryURL)
