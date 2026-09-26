@@ -1,7 +1,7 @@
 import ServiceManagement
 import SwiftUI
 
-struct ContentView: View {
+struct NotchView: View {
 
     let viewModel: NotchViewModel
 
@@ -153,19 +153,19 @@ extension NotchGeometry {
 }
 
 #Preview("Collapsed · hardware") {
-    ContentView(viewModel: NotchViewModel(geometry: .previewHardware))
+    NotchView(viewModel: NotchViewModel(geometry: .previewHardware))
         .frame(width: 400, height: 150)
 }
 
 #Preview("Collapsed · virtual") {
-    ContentView(viewModel: NotchViewModel(geometry: .previewVirtual))
+    NotchView(viewModel: NotchViewModel(geometry: .previewVirtual))
         .frame(width: 400, height: 150)
 }
 
 #Preview("Expanded") {
     let model = NotchViewModel(geometry: .previewHardware)
     model.presentation = .expanded
-    return ContentView(viewModel: model)
+    return NotchView(viewModel: model)
         .frame(width: 400, height: 150)
 }
 

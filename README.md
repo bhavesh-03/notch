@@ -56,7 +56,7 @@ Tests run inside the app, so the notch briefly appears while they execute.
 
 ```
 NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSPanel above the menu bar)
-                 │                          └── NSHostingView ──▶ ContentView (SwiftUI, renders modules)
+                 │                          └── NSHostingView ──▶ NotchView (SwiftUI, renders modules)
                  │                                                     ▲
                  ├── NSEvent mouse monitors ──▶ NotchViewModel ────────┘ (@Observable)
                  └── screen-change notifications       ├── NotchGeometry   (where the notch is)
@@ -64,7 +64,7 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
                                                        └── TimerController (countdown)
 ```
 
-- **The window.** `NotchPanel` is a transparent, borderless, non-activating `NSPanel` at `mainMenu + 3` window level, visible on every Space and over full-screen apps. SwiftUI content is hosted inside it via `NSHostingView`.
+- **The window.** `NotchPanel` is a transparent, borderless, non-activating `NSPanel` at `mainMenu + 3` window level, visible on every Space and over full-screen apps. SwiftUI content is hosted inside it via `NSHostingView` (`NotchView`).
 - **Finding the notch.** `NotchGeometry` computes the notch rectangle from `NSScreen.auxiliaryTopLeftArea` / `auxiliaryTopRightArea` (using only their widths, anchored to `screen.frame`) and `safeAreaInsets.top`. Screens without a notch get a centered 180×24 virtual notch built through the same code path. The math lives in a pure initializer so it can be exercised without a real screen.
 - **Hover and clicks.** The panel ignores mouse events while collapsed so the menu bar underneath stays usable. Global and local `mouseMoved` monitors hit-test the cursor against the collapsed notch (or the whole panel when expanded). Collapsing is debounced by 300 ms with a cancellable `Task`.
 - **State.** `NotchViewModel` is the single source of truth for the view: expansion state, geometry and the battery monitor. AppKit code mutates it; SwiftUI re-renders automatically through `@Observable`.
@@ -82,29 +82,34 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 
 ## Project structure
 
-| File | Responsibility |
-|---|---|
-| `NotchApp.swift` | App entry point; hooks up the `AppDelegate`, opens no regular windows |
-| `AppDelegate.swift` | Creates the panel and view model, installs mouse monitors, handles display changes |
-| `NotchPanel.swift` | The borderless, transparent, always-on-top window |
-| `NotchGeometry.swift` | Notch / collapsed / panel rectangles for a screen; hardware vs virtual notch |
-| `NotchViewModel.swift` | Observable UI state: expanded/collapsed with debounced collapse, geometry, battery |
-| `ContentView.swift` | Draws the notch shape and lays out whatever the modules provide; knows nothing about specific features |
-| `NotchModule.swift` | The `NotchModule` protocol, `NotchPlacement`, and ear-ownership selection |
-| `BatteryMonitor+NotchModule.swift` | Battery's notch UI: ear icon / percentage, expanded section |
-| `TimerController+NotchModule.swift` | Timer's notch UI: ear countdown, expanded controls |
-| `BatteryStatus.swift` | Pure battery value type and icon selection |
-| `BatteryMonitor.swift` | IOKit power-source reading and change notifications |
-| `CalendarEvent.swift` | Pure event value and next-event selection (in progress or upcoming, skips all-day) |
-| `CalendarMonitor.swift` | EventKit access, querying, and change notifications |
-| `CalendarMonitor+NotchModule.swift` | Calendar's notch UI: access button, denied state, next event |
-| `NotchMotion.swift` | Activity motion tokens: open/close springs and the staged content transition |
-| `LaunchAtLogin.swift` | Login item registration via `SMAppService`, behind a small protocol so it can be faked in tests |
-| `PlugInFilter.swift` | Decides whether a plug-in deserves the charging activity (ignores reconnects within 2 s) |
-| `TimerState.swift` | Pure countdown state machine (idle / running / paused), date-based so it survives sleep |
-| `TimerController.swift` | Live timer: injectable clock, schedules a single wake-up at the end date, `onStart` / `onFinish` hooks |
-| `NotificationService.swift` | Notification permission (requested in context) and the "Time's up" notification |
-| `NotchTests/` | Swift Testing unit tests for the pure logic: timer, geometry, battery parsing |
+Files are grouped **by feature**, not by layer. Folders are purely organizational in Swift — everything is one module — so moving a file never changes behavior.
+
+```
+Notch/
+├── App/                    Entry point and app-level concerns
+│   ├── NotchApp.swift          App entry; opens no regular windows
+│   ├── AppDelegate.swift       Creates the panel and view model, mouse/screen/menu wiring
+│   └── LaunchAtLogin.swift     Login item via SMAppService, behind a fakeable protocol
+├── Shell/                  The notch itself: window, geometry, layout, module system
+│   ├── NotchPanel.swift        Borderless, transparent, non-activating always-on-top panel
+│   ├── NotchGeometry.swift     Notch / collapsed / activity / panel rects; hardware vs virtual notch
+│   ├── NotchViewModel.swift    Presentation state (collapsed / expanded / activity), modules
+│   ├── NotchModule.swift       The protocol features conform to, placements, ear ownership
+│   ├── NotchMotion.swift       Activity animation and transition values
+│   └── NotchView.swift         Draws the notch and lays out what the modules provide
+├── Features/
+│   ├── Battery/                BatteryStatus, PlugInFilter, BatteryMonitor (+NotchModule)
+│   ├── Timer/                  TimerState, TimerController (+NotchModule)
+│   └── Calendar/               CalendarEvent, CalendarMonitor (+NotchModule)
+├── Services/
+│   └── NotificationService.swift   Notification permission and posting
+└── Resources/
+    └── Assets.xcassets
+
+NotchTests/                 Swift Testing suites, mirroring the structure above
+```
+
+Each feature follows the same pattern: a pure value type with the logic (tested), an `@Observable` class that talks to the system, and a `Type+NotchModule.swift` file with its notch UI.
 
 ## Known limitations
 

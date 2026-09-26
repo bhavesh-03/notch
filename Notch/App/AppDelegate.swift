@@ -24,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let viewModel = NotchViewModel(geometry: geometry)
         self.viewModel = viewModel
         let panel = NotchPanel(contentRect: geometry.panelRect)
-        panel.contentView = NSHostingView(rootView: ContentView(viewModel: viewModel))
+        panel.contentView = NSHostingView(rootView: NotchView(viewModel: viewModel))
         panel.ignoresMouseEvents = true
         panel.orderFrontRegardless()
         
