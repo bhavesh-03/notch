@@ -21,10 +21,11 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 | Reduce Motion support, ignoring quick cable reconnects | ✅ Done |
 | Calendar: next event in the expanded notch (asks for access only when you click) | ✅ Done |
 | Calendar: "8 min" countdown in the ears before a meeting, "Now" activity when it starts | ✅ Done |
-| Stable code signing (permissions survive rebuilds), then launch at login | ⏳ Next |
+| Stable code signing (permissions survive rebuilds) | ✅ Done |
+| Launch at login | ⏳ Next |
 | File shelf — drag files onto the notch | 🗓 Planned |
 | Music / Now Playing controls | 🗓 Planned |
-| Launch at login, signing & notarization | 🗓 Planned |
+| Distribution: Developer ID signing and notarization | 🗓 Planned |
 
 ## Requirements
 
@@ -36,7 +37,8 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 
 1. Open `Notch.xcodeproj` in Xcode.
 2. Select the **Notch** scheme and **My Mac** as the destination.
-3. Press **⌘R**.
+3. Under **Signing & Capabilities**, set **Team** to your own (a free Personal Team works). Ad-hoc signed builds get a new identity every build, so macOS would ask for calendar access again after each rebuild.
+4. Press **⌘R**.
 
 The app runs as an agent (`LSUIElement`): it has **no Dock icon and no menu bar menu**. To quit it, press **Stop (⌘.)** in Xcode, or from a terminal:
 
