@@ -24,8 +24,8 @@ extension NowPlayingMonitor: NotchModule {
             case .headline:
                 PlayerRow(monitor: self, info: info)
             case .activityLeading:
-                SourceAppIcon(bundleIdentifier: info.appBundleIdentifier)
-                    .frame(width: 22, height: 22)
+                ArtworkTile(bundleIdentifier: info.appBundleIdentifier)
+                    .frame(width: 26, height: 26)
             case .activityTrailing:
                 PlayingIndicator(isPlaying: info.isPlaying)
                     .font(.title3)
@@ -48,8 +48,8 @@ private struct PlayerRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            SourceAppIcon(bundleIdentifier: info.appBundleIdentifier)
-                .frame(width: 40, height: 40)
+            ArtworkTile(bundleIdentifier: info.appBundleIdentifier)
+                .frame(width: 44, height: 44)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(info.title)
@@ -115,6 +115,40 @@ private struct PlaybackProgress: View {
 
     private static func format(_ seconds: TimeInterval) -> String {
         Duration.seconds(Int(max(0, seconds))).formatted(.time(pattern: .minuteSecond))
+    }
+}
+
+/// Stands in for album art, which third-party apps can't read for most sources: the playing app's icon
+/// on a soft background tinted with the icon's own colors, the way Apple's media controls look without art.
+private struct ArtworkTile: View {
+    let bundleIdentifier: String
+
+    var body: some View {
+        GeometryReader { proxy in
+            let side = min(proxy.size.width, proxy.size.height)
+            let tint = Color(nsColor: AppIconTint.color(for: bundleIdentifier))
+            RoundedRectangle(cornerRadius: side * 0.22, style: .continuous)
+                .fill(LinearGradient(colors: [tint.opacity(0.95), tint.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay {
+                    SourceAppIcon(bundleIdentifier: bundleIdentifier)
+                        .frame(width: side * 0.68, height: side * 0.68)
+                        .shadow(color: .black.opacity(0.3), radius: side * 0.05, y: side * 0.03)
+                }
+        }
+    }
+}
+
+/// Remembers each app's icon tint so it's computed once, not on every redraw.
+private enum AppIconTint {
+    static var cache: [String: NSColor] = [:]
+
+    static func color(for bundleIdentifier: String) -> NSColor {
+        if let cached = cache[bundleIdentifier] { return cached }
+        let icon = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
+            .map { NSWorkspace.shared.icon(forFile: $0.path) }
+        let color = icon?.averageColor ?? .darkGray
+        cache[bundleIdentifier] = color
+        return color
     }
 }
 
