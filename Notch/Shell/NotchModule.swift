@@ -25,6 +25,14 @@ protocol NotchModule: AnyObject {
 
     @ViewBuilder
     func content(for placement: NotchPlacement) -> Content
+
+    /// Whether the module gets a column in the expanded notch.
+    var hasExpandedSection: Bool { get }
+}
+
+extension NotchModule {
+    /// Most modules do; one that only lives in the ears overrides this.
+    var hasExpandedSection: Bool { true }
 }
 extension Array where Element == any NotchModule {
     /// The module that should occupy the collapsed ears: the highest `earPriority`, ignoring modules that return nil.

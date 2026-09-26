@@ -53,6 +53,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             viewModel.showActivity(from: viewModel.battery)
         }
 
+        viewModel.nowPlaying.start()
+
         viewModel.calendar.onEventStarted = { [weak viewModel] _ in
             guard let viewModel else { return }
             viewModel.showActivity(from: viewModel.calendar)

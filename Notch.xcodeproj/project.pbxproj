@@ -6,6 +6,10 @@
 	objectVersion = 110;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B7D6A0013068700000000002 /* libNowPlayingBridge.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 44CFB4513068641E00CC1CF1 /* libNowPlayingBridge.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		44CFB2D930678F8400CC1CF1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -14,11 +18,31 @@
 			remoteGlobalIDString = 44CFB2B43066CAF800CC1CF1;
 			remoteInfo = Notch;
 		};
+		B7D6A0013068700000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 44CFB2AD3066CAF800CC1CF1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 44CFB4503068641E00CC1CF1;
+			remoteInfo = NowPlayingBridge;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B7D6A0013068700000000003 /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = Frameworks;
+			files = (
+				B7D6A0013068700000000002 /* libNowPlayingBridge.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		44CFB2B53066CAF800CC1CF1 /* Notch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Notch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		44CFB2D530678F8400CC1CF1 /* NotchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NotchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		44CFB4513068641E00CC1CF1 /* libNowPlayingBridge.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libNowPlayingBridge.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -30,6 +54,11 @@
 		44CFB2D630678F8400CC1CF1 /* NotchTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = NotchTests;
+			sourceTree = "<group>";
+		};
+		B7D6A0013068700000000001 /* NowPlayingBridge */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = NowPlayingBridge;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -45,6 +74,11 @@
 			files = (
 			);
 		};
+		44CFB44F3068641E00CC1CF1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -53,6 +87,7 @@
 			children = (
 				44CFB2B73066CAF800CC1CF1 /* Notch */,
 				44CFB2D630678F8400CC1CF1 /* NotchTests */,
+				B7D6A0013068700000000001 /* NowPlayingBridge */,
 				44CFB2B63066CAF800CC1CF1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -62,11 +97,20 @@
 			children = (
 				44CFB2B53066CAF800CC1CF1 /* Notch.app */,
 				44CFB2D530678F8400CC1CF1 /* NotchTests.xctest */,
+				44CFB4513068641E00CC1CF1 /* libNowPlayingBridge.dylib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		44CFB44D3068641E00CC1CF1 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			files = (
+			);
+		};
+/* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
 		44CFB2B43066CAF800CC1CF1 /* Notch */ = {
@@ -76,8 +120,12 @@
 				44CFB2B13066CAF800CC1CF1 /* Sources */,
 				44CFB2B23066CAF800CC1CF1 /* Frameworks */,
 				44CFB2B33066CAF800CC1CF1 /* Resources */,
+				B7D6A0013068700000000003 /* Embed Libraries */,
 			);
 			buildRules = (
+			);
+			dependencies = (
+				B7D6A0013068700000000005 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				44CFB2B73066CAF800CC1CF1 /* Notch */,
@@ -108,6 +156,24 @@
 			productReference = 44CFB2D530678F8400CC1CF1 /* NotchTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		44CFB4503068641E00CC1CF1 /* NowPlayingBridge */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 44CFB4543068641E00CC1CF1 /* Build configuration list for PBXNativeTarget "NowPlayingBridge" */;
+			buildPhases = (
+				44CFB44D3068641E00CC1CF1 /* Headers */,
+				44CFB44E3068641E00CC1CF1 /* Sources */,
+				44CFB44F3068641E00CC1CF1 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				B7D6A0013068700000000001 /* NowPlayingBridge */,
+			);
+			name = NowPlayingBridge;
+			productName = NowPlayingBridge;
+			productReference = 44CFB4513068641E00CC1CF1 /* libNowPlayingBridge.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -124,6 +190,9 @@
 					44CFB2D430678F8400CC1CF1 = {
 						CreatedOnToolsVersion = 27.0;
 						TestTargetID = 44CFB2B43066CAF800CC1CF1;
+					};
+					44CFB4503068641E00CC1CF1 = {
+						CreatedOnToolsVersion = 27.0;
 					};
 				};
 			};
@@ -143,6 +212,7 @@
 			targets = (
 				44CFB2B43066CAF800CC1CF1 /* Notch */,
 				44CFB2D430678F8400CC1CF1 /* NotchTests */,
+				44CFB4503068641E00CC1CF1 /* NowPlayingBridge */,
 			);
 		};
 /* End PBXProject section */
@@ -171,6 +241,11 @@
 			files = (
 			);
 		};
+		44CFB44E3068641E00CC1CF1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -178,6 +253,11 @@
 			isa = PBXTargetDependency;
 			target = 44CFB2B43066CAF800CC1CF1 /* Notch */;
 			targetProxy = 44CFB2D930678F8400CC1CF1 /* PBXContainerItemProxy */;
+		};
+		B7D6A0013068700000000005 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 44CFB4503068641E00CC1CF1 /* NowPlayingBridge */;
+			targetProxy = B7D6A0013068700000000004 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -305,6 +385,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Notch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -315,7 +396,6 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
-				CODE_SIGN_ENTITLEMENTS = Notch.entitlements;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Notch shows your next calendar event when you expand the notch.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -340,6 +420,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Notch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -350,7 +431,6 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
-				CODE_SIGN_ENTITLEMENTS = Notch.entitlements;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Notch shows your next calendar event when you expand the notch.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -408,6 +488,32 @@
 			};
 			name = Release;
 		};
+		44CFB4523068641E00CC1CF1 /* Debug configuration for PBXNativeTarget "NowPlayingBridge" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = RCD2UV23X9;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		44CFB4533068641E00CC1CF1 /* Release configuration for PBXNativeTarget "NowPlayingBridge" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = RCD2UV23X9;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -432,6 +538,14 @@
 			buildConfigurations = (
 				44CFB2DC30678F8400CC1CF1 /* Debug configuration for PBXNativeTarget "NotchTests" */,
 				44CFB2DD30678F8400CC1CF1 /* Release configuration for PBXNativeTarget "NotchTests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		44CFB4543068641E00CC1CF1 /* Build configuration list for PBXNativeTarget "NowPlayingBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				44CFB4523068641E00CC1CF1 /* Debug configuration for PBXNativeTarget "NowPlayingBridge" */,
+				44CFB4533068641E00CC1CF1 /* Release configuration for PBXNativeTarget "NowPlayingBridge" */,
 			);
 			defaultConfigurationName = Release;
 		};

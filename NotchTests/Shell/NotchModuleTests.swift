@@ -67,3 +67,14 @@ struct NotchModuleTests {
         timer.reset()
     }
 }
+
+@MainActor
+struct ExpandedSectionTests {
+    @Test func modulesHaveAnExpandedSectionByDefault() {
+        #expect(NotchModuleTests.FakeModule("a", priority: nil).hasExpandedSection)
+    }
+
+    @Test func nowPlayingLivesOnlyInTheEarsForNow() {
+        #expect(!NowPlayingMonitor().hasExpandedSection)
+    }
+}

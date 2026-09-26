@@ -25,7 +25,8 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 | Launch at login and Quit, from a right-click menu on the expanded notch | ✅ Done |
 | File shelf: drop files (or screenshot thumbnails) onto the notch; kept across launches | ✅ Done |
 | File shelf: Quick Look thumbnails, drag files back out, right-click Open / Show in Finder / Remove / Clear | ✅ Done |
-| Music / Now Playing controls | ⏳ Next |
+| Now Playing from any app (browsers, web apps, Music, Spotify…): source app and live indicator in the ears | ✅ Done |
+| Now Playing: expanded player with controls, track-change activity | ⏳ Next |
 | Distribution: Developer ID signing and notarization | 🗓 Planned |
 
 ## Requirements
@@ -77,6 +78,8 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 - **Calendar.** Reading calendars needs two things: the sandbox entitlement `com.apple.security.personal-information.calendars` (build setting `ENABLE_RESOURCE_ACCESS_CALENDARS`) and an `NSCalendarsFullAccessUsageDescription` string, without which macOS silently denies the request. Access is requested only when you click "Show next event" in the expanded notch; if denied, the notch links to the Calendars privacy settings. `CalendarMonitor` refreshes on `EKEventStoreChanged`, so edits in Calendar appear immediately. From 10 minutes before a meeting until 5 minutes after it starts, the calendar claims the ears (priority 5: above the battery, below a running timer) with a live "8 min" countdown, and the notch springs out with the title when it starts. Because time passing isn't a state change SwiftUI can observe, `CalendarMonitor` schedules a single wake-up for the next moment the display should change (`CalendarEvent.nextBoundary`) instead of polling.
 - **Charging animation.** The activity's battery is drawn by hand (`ChargingBattery`) because SF Symbols only come in 25% steps: its fill is a custom `BatteryFill` shape whose `animatableData` is the level, so it fills smoothly from empty to the current charge, then the bolt pops in with a bouncy spring. It's always green — at plug-in macOS usually reports "not charging yet" — and the ear icon afterwards shows the accurate state (bolt when charging, plug when on hold). `PlugInFilter` ignores a loose cable reconnecting within 2 seconds.
 - **File shelf.** Dragging files toward the notch opens it early — over the whole expanded area, detected by file URLs or file promises on the drag pasteboard — so you never have to push against the top edge (which would trigger Mission Control). Dropped files are *referenced* through security-scoped bookmarks (entitlement `com.apple.security.files.bookmarks.app-scope`, declared in `Notch.entitlements` because there's no build setting for it) so access survives relaunches. Drops without a usable file, like a screenshot thumbnail's file promise, are *copied* into the app's `Application Support/Shelf` folder and deleted when removed. The shelf holds 6 items and shows "Shelf full" when a drop won't fit. Items show Quick Look thumbnails, can be dragged back out to any app, and have their own right-click menu (Open, Show in Finder, Remove, Clear Shelf). An owned copy is only deleted while it's still in the shelf's folder — if Finder moved it out during a drag, it's the user's file now.
+- **Now Playing.** macOS has no public API for what *other* apps are playing, and since macOS 15.4 the private MediaRemote framework only answers Apple-signed processes. The app therefore launches Apple's `/usr/bin/perl` and has it load `libNowPlayingBridge.dylib` (an Objective-C target embedded in `Contents/Frameworks`, not linked into the app). Inside perl, the bridge polls `MRNowPlayingRequest` and writes a JSON line to stdout whenever the state changes, and reads `toggle` / `next` / `previous` from stdin; closing stdin ends it. This works from inside the App Sandbox, so no helper process is needed. `NowPlayingMonitor` owns the process, restarts it after 10 s if it dies, and claims the ears (priority 3) while something is playing. Because this relies on a private framework, the app can't be distributed through the Mac App Store.
+- **Ear handovers.** When the owner of the collapsed ears changes, the old content blurs and shrinks away while the new content comes into focus (`NotchMotion.earContent`, about 0.85 s).
 - **App menu.** Right-clicking the expanded notch opens a context menu with **Launch at Login** (`SMAppService.mainApp`; status re-read every time the notch expands, since it can be changed in System Settings) and **Quit Notch**. While any of the app's menus is open (`NSMenu` begin/end tracking notifications) the notch is held open, then the pointer is re-checked when the menu closes.
 - **Motion.** Activity animation values live in `NotchMotion`: the old content leaves in 0.1 s, the shape springs open (bounce 0.38) or closed (bounce 0.25), and the new content blurs and scales into focus just after the shape starts moving, so two layouts never overlap.
 - **Reduce Motion.** With the system setting on, activities open with a short bounce-free ease instead of a spring (`NotchViewModel` reads `NSWorkspace`, injected for tests) and the charging battery appears already full (`ChargingBattery` reads the SwiftUI environment).
@@ -103,12 +106,14 @@ Notch/
 │   ├── Battery/                BatteryStatus, PlugInFilter, BatteryMonitor (+NotchModule)
 │   ├── Timer/                  TimerState, TimerController (+NotchModule)
 │   ├── Calendar/               CalendarEvent, CalendarMonitor (+NotchModule)
-│   └── Shelf/                  ShelfStore (+NotchModule)
+│   ├── Shelf/                  ShelfStore (+NotchModule)
+│   └── NowPlaying/             NowPlayingInfo, LineBuffer, NowPlayingBridgeProcess, NowPlayingMonitor (+NotchModule)
 ├── Services/
 │   └── NotificationService.swift   Notification permission and posting
 └── Resources/
     └── Assets.xcassets
 
+NowPlayingBridge/           Objective-C dynamic library loaded into /usr/bin/perl (see "Now Playing")
 NotchTests/                 Swift Testing suites, mirroring the structure above
 Notch.entitlements          Entitlements with no build-setting equivalent (security-scoped bookmarks)
 ```
@@ -119,6 +124,7 @@ Each feature follows the same pattern: a pure value type with the logic (tested)
 
 - The right-click menu is only reachable once the notch is expanded (the collapsed notch lets clicks pass through to the menu bar).
 - A login item registered from a debug build points at that build in DerivedData.
+- Now Playing depends on private macOS behavior and may break in a future macOS release; the notch keeps working without it.
 - The expanded size is fixed at 400×150.
 - The timer length is fixed at 25 minutes.
 - Tested on a 13" MacBook Air (M4) only.

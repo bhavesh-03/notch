@@ -57,31 +57,39 @@ struct NotchView: View {
         viewModel.modules.earOwner
     }
 
-    @ViewBuilder
+    /// Which module owns the ears; changes to it are animated no matter which module caused them.
+    private var earOwnerID: ObjectIdentifier? {
+        earModule.map { ObjectIdentifier($0) }
+    }
+
     private var collapsedContent: some View {
-        switch geometry.kind {
-        case .hardware:
-            HStack(spacing: 0) {
-                ear(.leadingEar)
-                    .frame(width: NotchGeometry.earWidth)
-                Spacer()
-                ear(.trailingEar)
-                    .frame(width: NotchGeometry.earWidth)
+        Group {
+            switch geometry.kind {
+            case .hardware:
+                HStack(spacing: 0) {
+                    ear(.leadingEar)
+                        .frame(width: NotchGeometry.earWidth)
+                    Spacer()
+                    ear(.trailingEar)
+                        .frame(width: NotchGeometry.earWidth)
+                }
+            case .virtual:
+                ear(.pill)
             }
-        case .virtual:
-            ear(.pill)
         }
+        .animation(NotchMotion.earHandover(reduceMotion: reduceMotion), value: earOwnerID)
     }
 
     private var expandedContent: some View {
         HStack(spacing: 20) {
-            ForEach(viewModel.modules.indices, id: \.self) { index in
+            let sections = viewModel.modules.filter(\.hasExpandedSection)
+            ForEach(sections.indices, id: \.self) { index in
                 if index > 0 {
                     Divider()
                         .overlay(.white.opacity(0.3))
                         .frame(height: 60)
                 }
-                AnyView(viewModel.modules[index].content(for: .expanded))
+                AnyView(sections[index].content(for: .expanded))
             }
         }
         .transition(.opacity)
@@ -126,9 +134,12 @@ struct NotchView: View {
     }
 
     private func ear(_ placement: NotchPlacement) -> some View {
-        Group {
+        ZStack {
             if let earModule {
+                // A new identity per owner makes a handover a transition, not an in-place swap.
                 AnyView(earModule.content(for: placement))
+                    .id(earOwnerID)
+                    .transition(NotchMotion.earContent(reduceMotion: reduceMotion))
             }
         }
     }

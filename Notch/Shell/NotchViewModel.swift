@@ -34,8 +34,9 @@ final class NotchViewModel {
     let timer = TimerController()
     let calendar = CalendarMonitor()
     let shelf = ShelfStore()
+    let nowPlaying = NowPlayingMonitor()
     let launchAtLogin = LaunchAtLogin()
-    var modules: [any NotchModule] { [battery, timer, calendar, shelf] }
+    var modules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying] }
 
     @ObservationIgnored private let reduceMotion: () -> Bool
 
