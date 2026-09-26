@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var monitors: [Any] = []
     private var screenChangeTask: Task<Void, Never>?
     private var menuTrackingTasks: [Task<Void, Never>] = []
+    private var dragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
     private let notifications = NotificationService()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -57,14 +58,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             viewModel.showActivity(from: viewModel.calendar)
         }
         
-        if let global = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: { [weak self] _ in
-            self?.handleMouseMoved()
+        if let global = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged, .leftMouseDown], handler: { [weak self] event in
+            self?.handleMouseEvent(event)
         }) {
             monitors.append(global)
         }
         
-        if let local = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved, handler: { [weak self] event in
-            self?.handleMouseMoved()
+        if let local = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged, .leftMouseDown], handler: { [weak self] event in
+            self?.handleMouseEvent(event)
             return event
         }) {
             monitors.append(local)
@@ -96,12 +97,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
     }
     
-    private func handleMouseMoved() {
-        guard let panel, let viewModel else { return }
+    private func handleMouseEvent(_ event: NSEvent) {
+        switch event.type {
+        case .leftMouseDown:
+            dragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
+        case .leftMouseDragged:
+            handleMouseMoved(isDraggingFile: isDraggingFile())
+        default:
+            handleMouseMoved()
+        }
+    }
+
+    /// True while the current drag carries files: the drag pasteboard was written since the mouse
+    /// went down and holds file URLs or file promises (e.g. a screenshot thumbnail).
+    /// Window drags and text selection don't qualify.
+    private func isDraggingFile() -> Bool {
+        let pasteboard = NSPasteboard(name: .drag)
+        guard pasteboard.changeCount != dragPasteboardChangeCount, let types = pasteboard.types else { return false }
+        let promiseTypes = NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) }
+        return types.contains(.fileURL) || types.contains(where: promiseTypes.contains)
+    }
+
+    private func handleMouseMoved(isDraggingFile: Bool = false) {
+        guard let viewModel else { return }
         
         let mouse = NSEvent.mouseLocation
-        let activeRect = (viewModel.isExpanded ? panel.frame : viewModel.geometry.collapsedRect)
-            .insetBy(dx: 0, dy: -1)
+        let activeRect = viewModel.geometry.hoverTarget(isExpanded: viewModel.isExpanded, isDraggingFile: isDraggingFile)
         
         if activeRect.contains(mouse) {
             viewModel.expand()

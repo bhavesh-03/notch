@@ -9,7 +9,7 @@ import AppKit
 
 struct NotchGeometry {
     
-    static let expandedSize = CGSize(width: 400, height: 150)
+    static let expandedSize = CGSize(width: 540, height: 150)
     static let activityEarWidth: CGFloat = 80
     static let activityDetailHeight: CGFloat = 26
     let screenFrame: CGRect
@@ -63,6 +63,14 @@ struct NotchGeometry {
             width: notchRect.width + 2 * Self.activityEarWidth,
             height: notchRect.height + Self.activityDetailHeight
         )
+    }
+
+    /// Where the pointer has to be for the notch to open (or stay open).
+    /// A file drag opens it from anywhere over the expanded area, so the user never has to
+    /// push against the top edge of the screen, which would trigger Mission Control.
+    func hoverTarget(isExpanded: Bool, isDraggingFile: Bool) -> CGRect {
+        (isExpanded || isDraggingFile ? panelRect : collapsedRect)
+            .insetBy(dx: 0, dy: -1)
     }
 
     var panelRect: CGRect {

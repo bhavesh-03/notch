@@ -61,4 +61,19 @@ struct NotchGeometryTests {
         #expect(size.height == 32 + NotchGeometry.activityDetailHeight)
         #expect(size.width <= geometry.panelRect.width && size.height <= geometry.panelRect.height)
     }
+
+    @Test func fileDragsOpenTheNotchFromTheWholeExpandedArea() {
+        let geometry = hardware(screen: airScreen)
+        let belowTheNotch = CGPoint(x: geometry.notchRect.midX + 150, y: geometry.notchRect.minY - 80)
+
+        #expect(!geometry.hoverTarget(isExpanded: false, isDraggingFile: false).contains(belowTheNotch))
+        #expect(geometry.hoverTarget(isExpanded: false, isDraggingFile: true).contains(belowTheNotch))
+        #expect(geometry.hoverTarget(isExpanded: true, isDraggingFile: false).contains(belowTheNotch))
+    }
+
+    @Test func hoverTargetIncludesTheTopScreenEdge() {
+        let geometry = hardware(screen: airScreen)
+        let topEdge = CGPoint(x: geometry.notchRect.midX, y: airScreen.maxY)
+        #expect(geometry.hoverTarget(isExpanded: false, isDraggingFile: false).contains(topEdge))
+    }
 }

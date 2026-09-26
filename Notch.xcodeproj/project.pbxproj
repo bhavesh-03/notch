@@ -315,6 +315,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
+				CODE_SIGN_ENTITLEMENTS = Notch.entitlements;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Notch shows your next calendar event when you expand the notch.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -349,6 +350,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
+				CODE_SIGN_ENTITLEMENTS = Notch.entitlements;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Notch shows your next calendar event when you expand the notch.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (

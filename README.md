@@ -23,7 +23,8 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 | Calendar: "8 min" countdown in the ears before a meeting, "Now" activity when it starts | ✅ Done |
 | Stable code signing (permissions survive rebuilds) | ✅ Done |
 | Launch at login and Quit, from a right-click menu on the expanded notch | ✅ Done |
-| File shelf: drag files onto the notch | ⏳ Next |
+| File shelf: drop files (or screenshot thumbnails) onto the notch; kept across launches | ✅ Done |
+| File shelf: drag files back out, per-item menu, clear | ⏳ Next |
 | Music / Now Playing controls | 🗓 Planned |
 | Distribution: Developer ID signing and notarization | 🗓 Planned |
 
@@ -75,6 +76,7 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 - **Activities.** `NotchViewModel.presentation` is an enum — `.collapsed`, `.expanded`, or `.activity(module)` — so impossible combinations can't be represented. A module can briefly take over the notch with `showActivity(from:)`: the notch springs out to an activity shape laid out *around* the camera (content in ears on either side plus a detail row below), then collapses on its own after ~2.5 s. Hovering always wins: it turns an activity into the full expanded view. The battery triggers an activity on the plug-in *edge* (not-plugged → plugged), never at launch or when charging merely starts later; the timer triggers one when it finishes.
 - **Calendar.** Reading calendars needs two things: the sandbox entitlement `com.apple.security.personal-information.calendars` (build setting `ENABLE_RESOURCE_ACCESS_CALENDARS`) and an `NSCalendarsFullAccessUsageDescription` string, without which macOS silently denies the request. Access is requested only when you click "Show next event" in the expanded notch; if denied, the notch links to the Calendars privacy settings. `CalendarMonitor` refreshes on `EKEventStoreChanged`, so edits in Calendar appear immediately. From 10 minutes before a meeting until 5 minutes after it starts, the calendar claims the ears (priority 5: above the battery, below a running timer) with a live "8 min" countdown, and the notch springs out with the title when it starts. Because time passing isn't a state change SwiftUI can observe, `CalendarMonitor` schedules a single wake-up for the next moment the display should change (`CalendarEvent.nextBoundary`) instead of polling.
 - **Charging animation.** The activity's battery is drawn by hand (`ChargingBattery`) because SF Symbols only come in 25% steps: its fill is a custom `BatteryFill` shape whose `animatableData` is the level, so it fills smoothly from empty to the current charge, then the bolt pops in with a bouncy spring. It's always green — at plug-in macOS usually reports "not charging yet" — and the ear icon afterwards shows the accurate state (bolt when charging, plug when on hold). `PlugInFilter` ignores a loose cable reconnecting within 2 seconds.
+- **File shelf.** Dragging files toward the notch opens it early — over the whole expanded area, detected by file URLs or file promises on the drag pasteboard — so you never have to push against the top edge (which would trigger Mission Control). Dropped files are *referenced* through security-scoped bookmarks (entitlement `com.apple.security.files.bookmarks.app-scope`, declared in `Notch.entitlements` because there's no build setting for it) so access survives relaunches. Drops without a usable file, like a screenshot thumbnail's file promise, are *copied* into the app's `Application Support/Shelf` folder and deleted when removed. The shelf holds 6 items and shows "Shelf full" when a drop won't fit.
 - **App menu.** Right-clicking the expanded notch opens a context menu with **Launch at Login** (`SMAppService.mainApp`; status re-read every time the notch expands, since it can be changed in System Settings) and **Quit Notch**. While any of the app's menus is open (`NSMenu` begin/end tracking notifications) the notch is held open, then the pointer is re-checked when the menu closes.
 - **Motion.** Activity animation values live in `NotchMotion`: the old content leaves in 0.1 s, the shape springs open (bounce 0.38) or closed (bounce 0.25), and the new content blurs and scales into focus just after the shape starts moving, so two layouts never overlap.
 - **Reduce Motion.** With the system setting on, activities open with a short bounce-free ease instead of a spring (`NotchViewModel` reads `NSWorkspace`, injected for tests) and the charging battery appears already full (`ChargingBattery` reads the SwiftUI environment).
@@ -100,13 +102,15 @@ Notch/
 ├── Features/
 │   ├── Battery/                BatteryStatus, PlugInFilter, BatteryMonitor (+NotchModule)
 │   ├── Timer/                  TimerState, TimerController (+NotchModule)
-│   └── Calendar/               CalendarEvent, CalendarMonitor (+NotchModule)
+│   ├── Calendar/               CalendarEvent, CalendarMonitor (+NotchModule)
+│   └── Shelf/                  ShelfStore (+NotchModule)
 ├── Services/
 │   └── NotificationService.swift   Notification permission and posting
 └── Resources/
     └── Assets.xcassets
 
 NotchTests/                 Swift Testing suites, mirroring the structure above
+Notch.entitlements          Entitlements with no build-setting equivalent (security-scoped bookmarks)
 ```
 
 Each feature follows the same pattern: a pure value type with the logic (tested), an `@Observable` class that talks to the system, and a `Type+NotchModule.swift` file with its notch UI.
