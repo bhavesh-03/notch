@@ -141,3 +141,9 @@ extension NotchGeometry {
     return ContentView(viewModel: model)
         .frame(width: 400, height: 150)
 }
+
+#Preview("Activity · charging") {
+    ChargingBattery(status: BatteryStatus(level: 78, isCharging: true, isPluggedIn: true), startsFinished: true)
+        .padding()
+        .background(.black)
+}

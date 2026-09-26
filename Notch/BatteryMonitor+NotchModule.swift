@@ -26,15 +26,14 @@ extension BatteryMonitor: NotchModule {
                 case .expanded:
                     BatterySection(status: status)
                 case .activityLeading:
-                    BatteryIcon(status: status)
-                        .font(.title2)
+                    ChargingBattery(status: status)
                 case .activityTrailing:
                     BatteryPercentage(status: status)
                         .font(.title3.bold())
                 case .activityDetail:
-                    Text(status.isCharging ? "Charging" : "Power connected")
+                    Text(status.isCharging ? "Charging" : "Connected")
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(.green)
                 }
             }
             .animation(.snappy, value: status)
@@ -89,3 +88,66 @@ private struct BatterySection: View {
     }
 }
 
+/// The battery drawn by hand so its fill can animate continuously (SF Symbols only have 0/25/50/75/100%).
+/// Always green: it celebrates power arriving. At plug-in macOS usually reports "not charging yet",
+/// so the accurate charging-vs-on-hold state is left to the ear icon (bolt vs plug) afterwards.
+struct ChargingBattery: View {
+    let status: BatteryStatus
+
+    @State private var isFilled: Bool
+    @State private var showsBolt: Bool
+
+    init(status: BatteryStatus, startsFinished: Bool = false) {
+        self.status = status
+        _isFilled = State(initialValue: startsFinished)
+        _showsBolt = State(initialValue: startsFinished)
+    }
+
+    var body: some View {
+        HStack(spacing: 1.5) {
+            RoundedRectangle(cornerRadius: 5)
+                .strokeBorder(.white.opacity(0.5), lineWidth: 1.5)
+                .overlay(alignment: .leading) {
+                    BatteryFill(level: isFilled ? Double(status.level) / 100 : 0)
+                        .fill(.green)
+                        .padding(3)
+                }
+                .overlay {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 11, weight: .heavy))
+                        .foregroundStyle(.white)
+                        .scaleEffect(showsBolt ? 1 : 0.01)
+                        .opacity(showsBolt ? 1 : 0)
+                }
+                .frame(width: 36, height: 17)
+
+            RoundedRectangle(cornerRadius: 1)
+                .fill(.white.opacity(0.5))
+                .frame(width: 2.5, height: 6)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8).delay(0.25)) {
+                isFilled = true
+            }
+            withAnimation(.bouncy(duration: 0.45, extraBounce: 0.25).delay(0.6)) {
+                showsBolt = true
+            }
+        }
+    }
+}
+
+/// The filled part of the battery; `level` (0...1) is animatable, so SwiftUI draws every in-between frame.
+struct BatteryFill: Shape {
+    var level: Double
+
+    var animatableData: Double {
+        get { level }
+        set { level = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let clamped = min(max(level, 0), 1)
+        let fillRect = CGRect(x: rect.minX, y: rect.minY, width: rect.width * clamped, height: rect.height)
+        return Path(roundedRect: fillRect, cornerRadius: 2.5)
+    }
+}

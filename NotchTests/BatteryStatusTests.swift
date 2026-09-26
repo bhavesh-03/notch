@@ -1,4 +1,5 @@
 import IOKit.ps
+import SwiftUI
 import Testing
 @testable import Notch
 
@@ -90,5 +91,28 @@ struct BatteryStatusTests {
         #expect(!charging.isPlugIn(after: pluggedHold), "charging starting later is not a new plug-in")
         #expect(!onBattery.isPlugIn(after: charging), "unplugging is not a plug-in")
         #expect(!pluggedHold.isPlugIn(after: nil), "no previous reading (e.g. at launch) is not a plug-in")
+    }
+}
+
+@MainActor
+struct BatteryFillTests {
+    let rect = CGRect(x: 0, y: 0, width: 30, height: 11)
+
+    @Test(arguments: [(0.0, 0.0), (0.5, 15.0), (0.78, 23.4), (1.0, 30.0)])
+    func fillWidthTracksLevel(level: Double, width: Double) {
+        let bounds = BatteryFill(level: level).path(in: rect).boundingRect
+        #expect(abs(bounds.width - width) < 0.001)
+    }
+
+    @Test func levelIsClampedToTheBattery() {
+        #expect(BatteryFill(level: 1.4).path(in: rect).boundingRect.width == 30)
+        #expect(BatteryFill(level: -0.2).path(in: rect).boundingRect.width == 0)
+    }
+
+    @Test func animatableDataIsTheLevel() {
+        var fill = BatteryFill(level: 0.2)
+        #expect(fill.animatableData == 0.2)
+        fill.animatableData = 0.9
+        #expect(fill.level == 0.9)
     }
 }
