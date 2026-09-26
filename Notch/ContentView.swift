@@ -143,6 +143,7 @@ struct ContentView: View {
         Text(Duration.seconds(Int(remaining.rounded(.up))).formatted(.time(pattern: .minuteSecond)))
             .monospacedDigit()
             .contentTransition(.numericText(countsDown: true))
+            .fixedSize()
     }
 
     private func batteryIcon(_ battery: BatteryStatus) -> some View {

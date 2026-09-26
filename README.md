@@ -14,7 +14,8 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 | Follows display changes (resolution, monitors, clamshell) | ✅ Done |
 | Battery level and charging / plugged-in state, live-updating | ✅ Done |
 | Timer / Pomodoro: play/pause/reset in the notch, live countdown in the ears | ✅ Done |
-| Timer completion notification | ⏳ Next |
+| Timer completion notification (permission asked on first start) | ✅ Done |
+| Shared module system and notch "activities" (e.g. charging animation) | ⏳ Next |
 | Calendar — next event | 🗓 Planned |
 | File shelf — drag files onto the notch | 🗓 Planned |
 | Music / Now Playing controls | 🗓 Planned |
@@ -67,7 +68,7 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 - **Clicking without stealing focus.** The panel is non-activating, can become key, and uses `becomesKeyOnlyIfNeeded`, so clicking its buttons never takes keyboard focus away from the app you're working in.
 - **Battery.** `BatteryMonitor` reads the internal battery through `IOPSCopyPowerSourcesInfo` and refreshes on `kIOPSNotifyAnyPowerSource`. `BatteryStatus` is a plain value type that parses the IOKit dictionary and picks the SF Symbol (bolt when charging, plug when on AC but not charging, e.g. during optimized charging).
 
-- **Timer.** `TimerState` stores an end date rather than counting ticks, so it can't drift and survives sleep. `TimerController` sleeps once until that date to finish. The view shows the countdown with a `TimelineView` aligned to whole seconds of remaining time, rounded up. While a timer is active it takes over the collapsed ears from the battery.
+- **Timer.** `TimerState` stores an end date rather than counting ticks, so it can't drift and survives sleep. `TimerController` sleeps once until that date to finish. The view shows the countdown with a `TimelineView` aligned to whole seconds of remaining time, rounded up. While a timer is active it takes over the collapsed ears from the battery. Notification permission is requested the first time a timer starts, not at launch; when the timer finishes, `NotificationService` posts a "Time's up" banner (shown even while the app is active, via the notification-center delegate).
 
 ## Project structure
 
@@ -82,7 +83,8 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 | `BatteryStatus.swift` | Pure battery value type and icon selection |
 | `BatteryMonitor.swift` | IOKit power-source reading and change notifications |
 | `TimerState.swift` | Pure countdown state machine (idle / running / paused), date-based so it survives sleep |
-| `TimerController.swift` | Live timer: injectable clock, schedules a single wake-up at the end date, `onFinish` hook |
+| `TimerController.swift` | Live timer: injectable clock, schedules a single wake-up at the end date, `onStart` / `onFinish` hooks |
+| `NotificationService.swift` | Notification permission (requested in context) and the "Time's up" notification |
 | `NotchTests/` | Swift Testing unit tests for the pure logic: timer, geometry, battery parsing |
 
 ## Known limitations

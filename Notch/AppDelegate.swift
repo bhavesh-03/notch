@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var viewModel: NotchViewModel?
     private var monitors: [Any] = []
     private var screenChangeTask: Task<Void, Never>?
+    private let notifications = NotificationService()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         
@@ -31,6 +32,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         self.panel = panel
+        
+        let timer = viewModel.timer
+        timer.onStart = { [notifications] in
+            Task { await notifications.requestAuthorizationIfNeeded() }
+        }
+        timer.onFinish = { [notifications, weak timer] in
+            guard let timer else { return }
+            notifications.postTimerFinished(duration: timer.state.duration)
+        }
         
         if let global = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: { [weak self] _ in
             self?.handleMouseMoved()

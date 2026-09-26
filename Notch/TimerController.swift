@@ -11,6 +11,7 @@ import Foundation
 @Observable
 final class TimerController {
     private(set) var state: TimerState
+    @ObservationIgnored var onStart: (() -> Void)?
     @ObservationIgnored var onFinish: (() -> Void)?
     @ObservationIgnored private var finishTask: Task<Void, Never>?
     @ObservationIgnored private let now: () -> Date
@@ -32,6 +33,7 @@ final class TimerController {
     func start() {
         state.start(at: now())
         scheduleFinish()
+        onStart?()
     }
     
     func pause() {

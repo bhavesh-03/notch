@@ -62,4 +62,28 @@ struct TimerControllerTests {
         try await Task.sleep(for: .milliseconds(300))
         #expect(finished == 0)
     }
+
+    @Test func onStartFiresOnStartAndResumeButNotPauseOrReset() {
+        let clock = FakeClock()
+        let timer = TimerController(duration: 100, now: { clock.now })
+        var starts = 0
+        timer.onStart = { starts += 1 }
+
+        timer.start()
+        #expect(starts == 1)
+        timer.pause()
+        #expect(starts == 1)
+        timer.start()
+        #expect(starts == 2)
+        timer.reset()
+        #expect(starts == 2)
+    }
+
+    @Test func onStartSeesTheRunningState() {
+        let timer = TimerController(duration: 100)
+        var wasRunning = false
+        timer.onStart = { [weak timer] in wasRunning = timer?.isRunning ?? false }
+        timer.start()
+        #expect(wasRunning)
+    }
 }
