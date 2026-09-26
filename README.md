@@ -18,8 +18,8 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 | Module system: features plug into the notch through one protocol | ✅ Done |
 | Activities: the notch briefly springs out when the charger is connected or a timer finishes | ✅ Done |
 | Charging choreography: hand-drawn battery fills to your level in green, bolt pops in | ✅ Done |
-| Reduce Motion support, ignoring quick cable reconnects | ⏳ Next |
-| Calendar — next event | 🗓 Planned |
+| Reduce Motion support, ignoring quick cable reconnects | ✅ Done |
+| Calendar — next event | ⏳ Next |
 | File shelf — drag files onto the notch | 🗓 Planned |
 | Music / Now Playing controls | 🗓 Planned |
 | Launch at login, signing & notarization | 🗓 Planned |
@@ -73,7 +73,8 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 
 - **Modules.** Each feature conforms to `NotchModule`: it reports an `earPriority` (how strongly it wants the collapsed ears right now, or `nil`) and provides content for each `NotchPlacement` (leading ear, trailing ear, pill on screens without a notch, expanded). The highest-priority module owns the ears; every module gets a section in the expanded view. Adding a feature means writing its model, conforming it in a `Type+NotchModule.swift` file, and listing it in `NotchViewModel.modules`.
 - **Activities.** `NotchViewModel.presentation` is an enum — `.collapsed`, `.expanded`, or `.activity(module)` — so impossible combinations can't be represented. A module can briefly take over the notch with `showActivity(from:)`: the notch springs out to an activity shape laid out *around* the camera (content in ears on either side plus a detail row below), then collapses on its own after ~2.5 s. Hovering always wins: it turns an activity into the full expanded view. The battery triggers an activity on the plug-in *edge* (not-plugged → plugged), never at launch or when charging merely starts later; the timer triggers one when it finishes.
-- **Charging animation.** The activity's battery is drawn by hand (`ChargingBattery`) because SF Symbols only come in 25% steps: its fill is a custom `BatteryFill` shape whose `animatableData` is the level, so it fills smoothly from empty to the current charge, then the bolt pops in with a bouncy spring. It's always green — at plug-in macOS usually reports "not charging yet" — and the ear icon afterwards shows the accurate state (bolt when charging, plug when on hold).
+- **Charging animation.** The activity's battery is drawn by hand (`ChargingBattery`) because SF Symbols only come in 25% steps: its fill is a custom `BatteryFill` shape whose `animatableData` is the level, so it fills smoothly from empty to the current charge, then the bolt pops in with a bouncy spring. It's always green — at plug-in macOS usually reports "not charging yet" — and the ear icon afterwards shows the accurate state (bolt when charging, plug when on hold). `PlugInFilter` ignores a loose cable reconnecting within 2 seconds.
+- **Reduce Motion.** With the system setting on, activities open with a short bounce-free ease instead of a spring (`NotchViewModel` reads `NSWorkspace`, injected for tests) and the charging battery appears already full (`ChargingBattery` reads the SwiftUI environment).
 - **Timer.** `TimerState` stores an end date rather than counting ticks, so it can't drift and survives sleep. `TimerController` sleeps once until that date to finish. The view shows the countdown with a `TimelineView` aligned to whole seconds of remaining time, rounded up. While a timer is active it outranks the battery for the collapsed ears (priority 10 vs 0). Notification permission is requested the first time a timer starts, not at launch; when the timer finishes, `NotificationService` posts a "Time's up" banner (shown even while the app is active, via the notification-center delegate).
 
 ## Project structure
@@ -91,6 +92,7 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 | `TimerController+NotchModule.swift` | Timer's notch UI: ear countdown, expanded controls |
 | `BatteryStatus.swift` | Pure battery value type and icon selection |
 | `BatteryMonitor.swift` | IOKit power-source reading and change notifications |
+| `PlugInFilter.swift` | Decides whether a plug-in deserves the charging activity (ignores reconnects within 2 s) |
 | `TimerState.swift` | Pure countdown state machine (idle / running / paused), date-based so it survives sleep |
 | `TimerController.swift` | Live timer: injectable clock, schedules a single wake-up at the end date, `onStart` / `onFinish` hooks |
 | `NotificationService.swift` | Notification permission (requested in context) and the "Time's up" notification |

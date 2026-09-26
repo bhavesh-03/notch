@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import Notch
 
@@ -60,5 +61,15 @@ struct NotchPresentationTests {
         #expect(NotchViewModel.Presentation.activity(model.battery) != .activity(model.timer))
         #expect(NotchViewModel.Presentation.activity(model.timer) == .activity(model.timer))
         #expect(NotchViewModel.Presentation.collapsed != .expanded)
+    }
+}
+
+@MainActor
+struct ReduceMotionTests {
+    @Test func activityAnimationRespectsReduceMotion() {
+        let normal = NotchViewModel(geometry: .previewHardware, reduceMotion: { false })
+        let reduced = NotchViewModel(geometry: .previewHardware, reduceMotion: { true })
+        #expect(normal.activityAnimation == .bouncy)
+        #expect(reduced.activityAnimation == .easeInOut(duration: 0.2))
     }
 }

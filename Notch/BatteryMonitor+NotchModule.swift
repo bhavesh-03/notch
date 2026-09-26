@@ -96,6 +96,7 @@ struct ChargingBattery: View {
 
     @State private var isFilled: Bool
     @State private var showsBolt: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(status: BatteryStatus, startsFinished: Bool = false) {
         self.status = status
@@ -126,6 +127,11 @@ struct ChargingBattery: View {
                 .frame(width: 2.5, height: 6)
         }
         .onAppear {
+            guard !reduceMotion else {
+                isFilled = true
+                showsBolt = true
+                return
+            }
             withAnimation(.easeOut(duration: 0.8).delay(0.25)) {
                 isFilled = true
             }

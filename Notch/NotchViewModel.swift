@@ -33,8 +33,19 @@ final class NotchViewModel {
     let timer = TimerController()
     var modules: [any NotchModule] { [battery, timer] }
 
-    init(geometry: NotchGeometry) {
+    @ObservationIgnored private let reduceMotion: () -> Bool
+
+    init(
+        geometry: NotchGeometry,
+        reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+    ) {
         self.geometry = geometry
+        self.reduceMotion = reduceMotion
+    }
+
+    /// Springs normally; a short, bounce-free ease when the user has asked for less motion.
+    var activityAnimation: Animation {
+        reduceMotion() ? .easeInOut(duration: 0.2) : .bouncy
     }
 
     func expand() {
@@ -67,7 +78,7 @@ final class NotchViewModel {
         guard !isExpanded else { return }
 
         activityTask?.cancel()
-        withAnimation(.bouncy) {
+        withAnimation(activityAnimation) {
             presentation = .activity(module)
         }
 
