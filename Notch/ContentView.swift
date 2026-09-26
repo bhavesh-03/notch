@@ -7,13 +7,25 @@ struct ContentView: View {
     private var geometry: NotchGeometry { viewModel.geometry }
 
     private var size: CGSize {
-        viewModel.isExpanded ? NotchGeometry.expandedSize : geometry.collapsedRect.size
+        switch viewModel.presentation {
+        case .collapsed: geometry.collapsedRect.size
+        case .expanded: NotchGeometry.expandedSize
+        case .activity: geometry.activitySize
+        }
+    }
+
+    private var cornerRadius: CGFloat {
+        switch viewModel.presentation {
+        case .collapsed: 10
+        case .expanded: 24
+        case .activity: 22
+        }
     }
 
     private var notchShape: UnevenRoundedRectangle {
         UnevenRoundedRectangle(
-            bottomLeadingRadius: viewModel.isExpanded ? 24 : 10,
-            bottomTrailingRadius: viewModel.isExpanded ? 24 : 10
+            bottomLeadingRadius: cornerRadius,
+            bottomTrailingRadius: cornerRadius
         )
     }
 
@@ -21,10 +33,14 @@ struct ContentView: View {
         notchShape.fill(.black)
             .frame(width: size.width, height: size.height)
             .overlay {
-                if viewModel.isExpanded {
-                    expandedContent
-                } else {
+                switch viewModel.presentation {
+                case .collapsed:
                     collapsedContent
+                case .expanded:
+                    expandedContent
+                case .activity(let module):
+                    activityContent(for: module)
+                        .transition(.opacity)
                 }
             }
             .foregroundStyle(.white)
@@ -66,6 +82,22 @@ struct ContentView: View {
         .transition(.opacity)
     }
 
+    private func activityContent(for module: any NotchModule) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                AnyView(module.content(for: .activityLeading))
+                    .frame(width: NotchGeometry.activityEarWidth)
+                Spacer()
+                AnyView(module.content(for: .activityTrailing))
+                    .frame(width: NotchGeometry.activityEarWidth)
+            }
+            .frame(height: geometry.notchRect.height)
+
+            AnyView(module.content(for: .activityDetail))
+                .frame(maxHeight: .infinity)
+        }
+    }
+
     private func ear(_ placement: NotchPlacement) -> some View {
         Group {
             if let earModule {
@@ -105,7 +137,7 @@ extension NotchGeometry {
 
 #Preview("Expanded") {
     let model = NotchViewModel(geometry: .previewHardware)
-    model.isExpanded = true
+    model.presentation = .expanded
     return ContentView(viewModel: model)
         .frame(width: 400, height: 150)
 }

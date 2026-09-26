@@ -13,6 +13,9 @@ enum NotchPlacement {
     case trailingEar
     case pill
     case expanded
+    case activityLeading
+    case activityTrailing
+    case activityDetail
 }
 
 protocol NotchModule: AnyObject {

@@ -44,4 +44,9 @@ struct BatteryStatus: Equatable {
         default:    return "battery.100percent"
         }
     }
+
+    func isPlugIn(after previous: BatteryStatus?) -> Bool {
+        guard let previous else { return false }
+        return !previous.isPluggedIn && isPluggedIn
+    }
 }

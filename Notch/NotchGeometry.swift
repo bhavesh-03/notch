@@ -10,6 +10,8 @@ import AppKit
 struct NotchGeometry {
     
     static let expandedSize = CGSize(width: 400, height: 150)
+    static let activityEarWidth: CGFloat = 80
+    static let activityDetailHeight: CGFloat = 26
     let screenFrame: CGRect
     let notchRect: CGRect
     enum Kind { case hardware, virtual }
@@ -56,6 +58,13 @@ struct NotchGeometry {
         }
     }
     
+    var activitySize: CGSize {
+        CGSize(
+            width: notchRect.width + 2 * Self.activityEarWidth,
+            height: notchRect.height + Self.activityDetailHeight
+        )
+    }
+
     var panelRect: CGRect {
         CGRect(
             x: notchRect.midX - Self.expandedSize.width / 2,

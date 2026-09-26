@@ -16,7 +16,8 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 | Timer / Pomodoro: play/pause/reset in the notch, live countdown in the ears | ✅ Done |
 | Timer completion notification (permission asked on first start) | ✅ Done |
 | Module system: features plug into the notch through one protocol | ✅ Done |
-| Notch "activities" (e.g. charging animation, timer finished) | ⏳ Next |
+| Activities: the notch briefly springs out when the charger is connected or a timer finishes | ✅ Done |
+| Apple-style charging choreography (filling battery, bolt), Reduce Motion support | ⏳ Next |
 | Calendar — next event | 🗓 Planned |
 | File shelf — drag files onto the notch | 🗓 Planned |
 | Music / Now Playing controls | 🗓 Planned |
@@ -70,6 +71,7 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 - **Battery.** `BatteryMonitor` reads the internal battery through `IOPSCopyPowerSourcesInfo` and refreshes on `kIOPSNotifyAnyPowerSource`. `BatteryStatus` is a plain value type that parses the IOKit dictionary and picks the SF Symbol (bolt when charging, plug when on AC but not charging, e.g. during optimized charging).
 
 - **Modules.** Each feature conforms to `NotchModule`: it reports an `earPriority` (how strongly it wants the collapsed ears right now, or `nil`) and provides content for each `NotchPlacement` (leading ear, trailing ear, pill on screens without a notch, expanded). The highest-priority module owns the ears; every module gets a section in the expanded view. Adding a feature means writing its model, conforming it in a `Type+NotchModule.swift` file, and listing it in `NotchViewModel.modules`.
+- **Activities.** `NotchViewModel.presentation` is an enum — `.collapsed`, `.expanded`, or `.activity(module)` — so impossible combinations can't be represented. A module can briefly take over the notch with `showActivity(from:)`: the notch springs out to an activity shape laid out *around* the camera (content in ears on either side plus a detail row below), then collapses on its own after ~2.5 s. Hovering always wins: it turns an activity into the full expanded view. The battery triggers an activity on the plug-in *edge* (not-plugged → plugged), never at launch or when charging merely starts later; the timer triggers one when it finishes.
 - **Timer.** `TimerState` stores an end date rather than counting ticks, so it can't drift and survives sleep. `TimerController` sleeps once until that date to finish. The view shows the countdown with a `TimelineView` aligned to whole seconds of remaining time, rounded up. While a timer is active it outranks the battery for the collapsed ears (priority 10 vs 0). Notification permission is requested the first time a timer starts, not at launch; when the timer finishes, `NotificationService` posts a "Time's up" banner (shown even while the app is active, via the notification-center delegate).
 
 ## Project structure

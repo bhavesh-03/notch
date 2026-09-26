@@ -13,6 +13,7 @@ import notify
 @Observable
 final class BatteryMonitor {
     private(set) var status: BatteryStatus?
+    @ObservationIgnored var onPluggedIn: (() -> Void)?
     @ObservationIgnored private var notifyToken: Int32 = NOTIFY_TOKEN_INVALID
 
     init() {
@@ -27,7 +28,11 @@ final class BatteryMonitor {
     }
 
     private func refresh() {
+        let previous = status
         status = Self.readStatus()
+        if let status, status.isPlugIn(after: previous) {
+            onPluggedIn?()
+        }
     }
 
     private static func readStatus() -> BatteryStatus? {

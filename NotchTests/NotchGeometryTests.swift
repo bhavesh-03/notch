@@ -53,4 +53,12 @@ struct NotchGeometryTests {
         let geometry = hardware(screen: airScreen)
         #expect(geometry.panelRect.contains(geometry.collapsedRect))
     }
+
+    @Test func activityWrapsTheNotchWithEarsAndADetailRow() {
+        let geometry = hardware(screen: airScreen)
+        let size = geometry.activitySize
+        #expect(size.width == 179 + 2 * NotchGeometry.activityEarWidth)
+        #expect(size.height == 32 + NotchGeometry.activityDetailHeight)
+        #expect(size.width <= geometry.panelRect.width && size.height <= geometry.panelRect.height)
+    }
 }

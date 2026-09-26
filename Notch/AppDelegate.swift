@@ -37,9 +37,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         timer.onStart = { [notifications] in
             Task { await notifications.requestAuthorizationIfNeeded() }
         }
-        timer.onFinish = { [notifications, weak timer] in
+        timer.onFinish = { [notifications, weak timer, weak viewModel] in
             guard let timer else { return }
             notifications.postTimerFinished(duration: timer.state.duration)
+            viewModel?.showActivity(from: timer)
+        }
+
+        viewModel.battery.onPluggedIn = { [weak viewModel] in
+            guard let viewModel else { return }
+            viewModel.showActivity(from: viewModel.battery)
         }
         
         if let global = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: { [weak self] _ in

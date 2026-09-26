@@ -25,6 +25,16 @@ extension BatteryMonitor: NotchModule {
                         .font(.caption2)
                 case .expanded:
                     BatterySection(status: status)
+                case .activityLeading:
+                    BatteryIcon(status: status)
+                        .font(.title2)
+                case .activityTrailing:
+                    BatteryPercentage(status: status)
+                        .font(.title3.bold())
+                case .activityDetail:
+                    Text(status.isCharging ? "Charging" : "Power connected")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.7))
                 }
             }
             .animation(.snappy, value: status)
@@ -78,3 +88,4 @@ private struct BatterySection: View {
         }
     }
 }
+

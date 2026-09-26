@@ -27,6 +27,17 @@ extension TimerController: NotchModule {
                     .font(.caption)
             case .expanded:
                 TimerSection(timer: self)
+            case .activityLeading:
+                Image(systemName: "timer")
+                    .font(.title2)
+            case .activityTrailing:
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.green)
+            case .activityDetail:
+                Text("Time's up")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.7))
             }
         }
         .animation(.snappy, value: state)

@@ -79,4 +79,16 @@ struct BatteryStatusTests {
         let status = BatteryStatus(level: 80, isCharging: false, isPluggedIn: true)
         #expect(status.symbolName == "powerplug.fill")
     }
+
+    @Test func plugInIsDetectedOnlyOnTheTransition() {
+        let onBattery = BatteryStatus(level: 50, isCharging: false, isPluggedIn: false)
+        let pluggedHold = BatteryStatus(level: 50, isCharging: false, isPluggedIn: true)
+        let charging = BatteryStatus(level: 50, isCharging: true, isPluggedIn: true)
+
+        #expect(pluggedHold.isPlugIn(after: onBattery))
+        #expect(charging.isPlugIn(after: onBattery))
+        #expect(!charging.isPlugIn(after: pluggedHold), "charging starting later is not a new plug-in")
+        #expect(!onBattery.isPlugIn(after: charging), "unplugging is not a plug-in")
+        #expect(!pluggedHold.isPlugIn(after: nil), "no previous reading (e.g. at launch) is not a plug-in")
+    }
 }
