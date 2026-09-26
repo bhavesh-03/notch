@@ -1,3 +1,4 @@
+import QuickLookThumbnailing
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -54,7 +55,7 @@ private struct ShelfSection: View {
                     ForEach(rows, id: \.first?.id) { row in
                         HStack(spacing: 2) {
                             ForEach(row) { item in
-                                FileTile(item: item)
+                                FileTile(item: item, shelf: shelf)
                             }
                         }
                     }
@@ -81,11 +82,11 @@ private struct ShelfSection: View {
 
 private struct FileTile: View {
     let item: ShelfStore.Item
+    let shelf: ShelfStore
 
     var body: some View {
         VStack(spacing: 2) {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: item.url.path))
-                .resizable()
+            FileThumbnail(url: item.url)
                 .frame(width: 28, height: 28)
             Text(item.name)
                 .font(.system(size: 9))
@@ -94,6 +95,53 @@ private struct FileTile: View {
                 .truncationMode(.middle)
         }
         .frame(width: 40)
+        .contentShape(Rectangle())
+        .onDrag {
+            NSItemProvider(contentsOf: item.url) ?? NSItemProvider()
+        } preview: {
+            FileThumbnail(url: item.url)
+                .frame(width: 48, height: 48)
+        }
+        .contextMenu {
+            Button("Open") {
+                NSWorkspace.shared.open(item.url)
+            }
+            Button("Show in Finder") {
+                NSWorkspace.shared.activateFileViewerSelecting([item.url])
+            }
+            Divider()
+            Button("Remove from Shelf") {
+                shelf.remove(item)
+            }
+            Button("Clear Shelf") {
+                shelf.removeAll()
+            }
+        }
         .transition(.scale.combined(with: .opacity))
+    }
+}
+
+/// A Quick Look thumbnail (image, PDF, video frame…), falling back to the file's Finder icon.
+private struct FileThumbnail: View {
+    let url: URL
+    @State private var thumbnail: NSImage?
+
+    var body: some View {
+        Image(nsImage: thumbnail ?? NSWorkspace.shared.icon(forFile: url.path))
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .task(id: url) {
+                thumbnail = await Self.makeThumbnail(for: url)
+            }
+    }
+
+    private static func makeThumbnail(for url: URL) async -> NSImage? {
+        let request = QLThumbnailGenerator.Request(
+            fileAt: url,
+            size: CGSize(width: 56, height: 56),
+            scale: NSScreen.main?.backingScaleFactor ?? 2,
+            representationTypes: .thumbnail
+        )
+        return try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request).nsImage
     }
 }

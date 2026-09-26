@@ -158,4 +158,19 @@ struct ShelfStoreTests {
         #expect(defaults.object(forKey: "shelf.bookmarks") == nil)
         #expect(store().items.map(\.name) == ["a.txt"])
     }
+
+    @Test func anOwnedCopyMovedOutOfTheShelfIsNotDeleted() async throws {
+        let shelf = store()
+        await shelf.add([pngProvider(Data([1, 2, 3]))])
+        let copy = try #require(shelf.items.first).url
+
+        // Simulate Finder moving the copy out when it's dragged to the Desktop.
+        let moved = folder.appendingPathComponent("Moved.png")
+        try FileManager.default.moveItem(at: copy, to: moved)
+        let relaunched = store()
+        #expect(relaunched.items.first?.url.lastPathComponent == "Moved.png")
+
+        relaunched.removeAll()
+        #expect(FileManager.default.fileExists(atPath: moved.path))
+    }
 }

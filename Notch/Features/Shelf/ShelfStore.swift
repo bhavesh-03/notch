@@ -110,9 +110,17 @@ final class ShelfStore {
         if item.isAccessing {
             item.url.stopAccessingSecurityScopedResource()
         }
-        if item.isOwnedCopy {
+        if isStillOwned(item) {
             try? FileManager.default.removeItem(at: item.url)
         }
+    }
+
+    /// An owned copy is only deleted while it's still in the shelf's folder. If the user dragged it
+    /// out and Finder *moved* it (the bookmark follows the move), it's now their file — leave it.
+    private func isStillOwned(_ item: Item) -> Bool {
+        item.isOwnedCopy
+            && item.url.deletingLastPathComponent().standardizedFileURL.resolvingSymlinksInPath()
+                == copiesFolder.standardizedFileURL.resolvingSymlinksInPath()
     }
 
     // MARK: - Persistence
