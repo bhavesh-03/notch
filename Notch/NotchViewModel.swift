@@ -11,6 +11,7 @@ final class NotchViewModel {
     var geometry: NotchGeometry
     let battery = BatteryMonitor()
     let timer = TimerController()
+    var modules: [any NotchModule] { [battery, timer] }
     
     init(geometry: NotchGeometry) {
         self.geometry = geometry

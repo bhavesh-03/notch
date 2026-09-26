@@ -15,7 +15,8 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 | Battery level and charging / plugged-in state, live-updating | ✅ Done |
 | Timer / Pomodoro: play/pause/reset in the notch, live countdown in the ears | ✅ Done |
 | Timer completion notification (permission asked on first start) | ✅ Done |
-| Shared module system and notch "activities" (e.g. charging animation) | ⏳ Next |
+| Module system: features plug into the notch through one protocol | ✅ Done |
+| Notch "activities" (e.g. charging animation, timer finished) | ⏳ Next |
 | Calendar — next event | 🗓 Planned |
 | File shelf — drag files onto the notch | 🗓 Planned |
 | Music / Now Playing controls | 🗓 Planned |
@@ -53,7 +54,7 @@ Tests run inside the app, so the notch briefly appears while they execute.
 
 ```
 NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSPanel above the menu bar)
-                 │                          └── NSHostingView ──▶ ContentView (SwiftUI)
+                 │                          └── NSHostingView ──▶ ContentView (SwiftUI, renders modules)
                  │                                                     ▲
                  ├── NSEvent mouse monitors ──▶ NotchViewModel ────────┘ (@Observable)
                  └── screen-change notifications       ├── NotchGeometry   (where the notch is)
@@ -68,7 +69,8 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 - **Clicking without stealing focus.** The panel is non-activating, can become key, and uses `becomesKeyOnlyIfNeeded`, so clicking its buttons never takes keyboard focus away from the app you're working in.
 - **Battery.** `BatteryMonitor` reads the internal battery through `IOPSCopyPowerSourcesInfo` and refreshes on `kIOPSNotifyAnyPowerSource`. `BatteryStatus` is a plain value type that parses the IOKit dictionary and picks the SF Symbol (bolt when charging, plug when on AC but not charging, e.g. during optimized charging).
 
-- **Timer.** `TimerState` stores an end date rather than counting ticks, so it can't drift and survives sleep. `TimerController` sleeps once until that date to finish. The view shows the countdown with a `TimelineView` aligned to whole seconds of remaining time, rounded up. While a timer is active it takes over the collapsed ears from the battery. Notification permission is requested the first time a timer starts, not at launch; when the timer finishes, `NotificationService` posts a "Time's up" banner (shown even while the app is active, via the notification-center delegate).
+- **Modules.** Each feature conforms to `NotchModule`: it reports an `earPriority` (how strongly it wants the collapsed ears right now, or `nil`) and provides content for each `NotchPlacement` (leading ear, trailing ear, pill on screens without a notch, expanded). The highest-priority module owns the ears; every module gets a section in the expanded view. Adding a feature means writing its model, conforming it in a `Type+NotchModule.swift` file, and listing it in `NotchViewModel.modules`.
+- **Timer.** `TimerState` stores an end date rather than counting ticks, so it can't drift and survives sleep. `TimerController` sleeps once until that date to finish. The view shows the countdown with a `TimelineView` aligned to whole seconds of remaining time, rounded up. While a timer is active it outranks the battery for the collapsed ears (priority 10 vs 0). Notification permission is requested the first time a timer starts, not at launch; when the timer finishes, `NotificationService` posts a "Time's up" banner (shown even while the app is active, via the notification-center delegate).
 
 ## Project structure
 
@@ -79,7 +81,10 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 | `NotchPanel.swift` | The borderless, transparent, always-on-top window |
 | `NotchGeometry.swift` | Notch / collapsed / panel rectangles for a screen; hardware vs virtual notch |
 | `NotchViewModel.swift` | Observable UI state: expanded/collapsed with debounced collapse, geometry, battery |
-| `ContentView.swift` | SwiftUI drawing of the notch in both states, plus previews |
+| `ContentView.swift` | Draws the notch shape and lays out whatever the modules provide; knows nothing about specific features |
+| `NotchModule.swift` | The `NotchModule` protocol, `NotchPlacement`, and ear-ownership selection |
+| `BatteryMonitor+NotchModule.swift` | Battery's notch UI: ear icon / percentage, expanded section |
+| `TimerController+NotchModule.swift` | Timer's notch UI: ear countdown, expanded controls |
 | `BatteryStatus.swift` | Pure battery value type and icon selection |
 | `BatteryMonitor.swift` | IOKit power-source reading and change notifications |
 | `TimerState.swift` | Pure countdown state machine (idle / running / paused), date-based so it survives sleep |
