@@ -28,10 +28,12 @@ final class NotchViewModel {
     @ObservationIgnored var onExpandedChange: ((Bool) -> Void)?
     private var collapseTask: Task<Void, Never>?
     private var activityTask: Task<Void, Never>?
+    @ObservationIgnored private var isHeldOpen = false
     var geometry: NotchGeometry
     let battery = BatteryMonitor()
     let timer = TimerController()
     let calendar = CalendarMonitor()
+    let launchAtLogin = LaunchAtLogin()
     var modules: [any NotchModule] { [battery, timer, calendar] }
 
     @ObservationIgnored private let reduceMotion: () -> Bool
@@ -65,8 +67,19 @@ final class NotchViewModel {
         }
     }
 
+    /// Keeps the notch expanded regardless of the pointer, e.g. while its menu is open.
+    func holdOpen() {
+        isHeldOpen = true
+        collapseTask?.cancel()
+        collapseTask = nil
+    }
+
+    func releaseHold() {
+        isHeldOpen = false
+    }
+
     func scheduleCollapse() {
-        guard isExpanded, collapseTask == nil else { return }
+        guard isExpanded, !isHeldOpen, collapseTask == nil else { return }
 
         collapseTask = Task {
             try? await Task.sleep(for: .milliseconds(300))

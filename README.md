@@ -22,8 +22,8 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 | Calendar: next event in the expanded notch (asks for access only when you click) | ✅ Done |
 | Calendar: "8 min" countdown in the ears before a meeting, "Now" activity when it starts | ✅ Done |
 | Stable code signing (permissions survive rebuilds) | ✅ Done |
-| Launch at login | ⏳ Next |
-| File shelf — drag files onto the notch | 🗓 Planned |
+| Launch at login and Quit, from a right-click menu on the expanded notch | ✅ Done |
+| File shelf: drag files onto the notch | ⏳ Next |
 | Music / Now Playing controls | 🗓 Planned |
 | Distribution: Developer ID signing and notarization | 🗓 Planned |
 
@@ -40,11 +40,7 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 3. Under **Signing & Capabilities**, set **Team** to your own (a free Personal Team works). Ad-hoc signed builds get a new identity every build, so macOS would ask for calendar access again after each rebuild.
 4. Press **⌘R**.
 
-The app runs as an agent (`LSUIElement`): it has **no Dock icon and no menu bar menu**. To quit it, press **Stop (⌘.)** in Xcode, or from a terminal:
-
-```bash
-pkill -x Notch
-```
+The app runs as an agent (`LSUIElement`): it has **no Dock icon and no menu bar menu**. Hover over the notch and **right-click** it for **Launch at Login** and **Quit Notch**.
 
 ## Running the tests
 
@@ -79,6 +75,7 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 - **Activities.** `NotchViewModel.presentation` is an enum — `.collapsed`, `.expanded`, or `.activity(module)` — so impossible combinations can't be represented. A module can briefly take over the notch with `showActivity(from:)`: the notch springs out to an activity shape laid out *around* the camera (content in ears on either side plus a detail row below), then collapses on its own after ~2.5 s. Hovering always wins: it turns an activity into the full expanded view. The battery triggers an activity on the plug-in *edge* (not-plugged → plugged), never at launch or when charging merely starts later; the timer triggers one when it finishes.
 - **Calendar.** Reading calendars needs two things: the sandbox entitlement `com.apple.security.personal-information.calendars` (build setting `ENABLE_RESOURCE_ACCESS_CALENDARS`) and an `NSCalendarsFullAccessUsageDescription` string, without which macOS silently denies the request. Access is requested only when you click "Show next event" in the expanded notch; if denied, the notch links to the Calendars privacy settings. `CalendarMonitor` refreshes on `EKEventStoreChanged`, so edits in Calendar appear immediately. From 10 minutes before a meeting until 5 minutes after it starts, the calendar claims the ears (priority 5: above the battery, below a running timer) with a live "8 min" countdown, and the notch springs out with the title when it starts. Because time passing isn't a state change SwiftUI can observe, `CalendarMonitor` schedules a single wake-up for the next moment the display should change (`CalendarEvent.nextBoundary`) instead of polling.
 - **Charging animation.** The activity's battery is drawn by hand (`ChargingBattery`) because SF Symbols only come in 25% steps: its fill is a custom `BatteryFill` shape whose `animatableData` is the level, so it fills smoothly from empty to the current charge, then the bolt pops in with a bouncy spring. It's always green — at plug-in macOS usually reports "not charging yet" — and the ear icon afterwards shows the accurate state (bolt when charging, plug when on hold). `PlugInFilter` ignores a loose cable reconnecting within 2 seconds.
+- **App menu.** Right-clicking the expanded notch opens a context menu with **Launch at Login** (`SMAppService.mainApp`; status re-read every time the notch expands, since it can be changed in System Settings) and **Quit Notch**. While any of the app's menus is open (`NSMenu` begin/end tracking notifications) the notch is held open, then the pointer is re-checked when the menu closes.
 - **Motion.** Activity animation values live in `NotchMotion`: the old content leaves in 0.1 s, the shape springs open (bounce 0.38) or closed (bounce 0.25), and the new content blurs and scales into focus just after the shape starts moving, so two layouts never overlap.
 - **Reduce Motion.** With the system setting on, activities open with a short bounce-free ease instead of a spring (`NotchViewModel` reads `NSWorkspace`, injected for tests) and the charging battery appears already full (`ChargingBattery` reads the SwiftUI environment).
 - **Timer.** `TimerState` stores an end date rather than counting ticks, so it can't drift and survives sleep. `TimerController` sleeps once until that date to finish. The view shows the countdown with a `TimelineView` aligned to whole seconds of remaining time, rounded up. While a timer is active it outranks the battery for the collapsed ears (priority 10 vs 0). Notification permission is requested the first time a timer starts, not at launch; when the timer finishes, `NotificationService` posts a "Time's up" banner (shown even while the app is active, via the notification-center delegate).
@@ -102,6 +99,7 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 | `CalendarMonitor.swift` | EventKit access, querying, and change notifications |
 | `CalendarMonitor+NotchModule.swift` | Calendar's notch UI: access button, denied state, next event |
 | `NotchMotion.swift` | Activity motion tokens: open/close springs and the staged content transition |
+| `LaunchAtLogin.swift` | Login item registration via `SMAppService`, behind a small protocol so it can be faked in tests |
 | `PlugInFilter.swift` | Decides whether a plug-in deserves the charging activity (ignores reconnects within 2 s) |
 | `TimerState.swift` | Pure countdown state machine (idle / running / paused), date-based so it survives sleep |
 | `TimerController.swift` | Live timer: injectable clock, schedules a single wake-up at the end date, `onStart` / `onFinish` hooks |
@@ -110,7 +108,8 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 
 ## Known limitations
 
-- Quitting requires Xcode or `pkill` until a proper quit control is added.
+- The right-click menu is only reachable once the notch is expanded (the collapsed notch lets clicks pass through to the menu bar).
+- A login item registered from a debug build points at that build in DerivedData.
 - The expanded size is fixed at 400×150.
 - The timer length is fixed at 25 minutes.
 - Tested on a 13" MacBook Air (M4) only.

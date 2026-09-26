@@ -1,3 +1,4 @@
+import ServiceManagement
 import SwiftUI
 
 struct ContentView: View {
@@ -48,6 +49,7 @@ struct ContentView: View {
             }
             .foregroundStyle(.white)
             .clipShape(notchShape)
+            .contextMenu { appMenu }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
@@ -83,6 +85,28 @@ struct ContentView: View {
             }
         }
         .transition(.opacity)
+    }
+
+    @ViewBuilder
+    private var appMenu: some View {
+        let launchAtLogin = viewModel.launchAtLogin
+
+        Toggle("Launch at Login", isOn: Binding(
+            get: { launchAtLogin.isEnabled },
+            set: { launchAtLogin.setEnabled($0) }
+        ))
+        if launchAtLogin.needsApproval {
+            Button("Allow in Login Items Settings…") {
+                SMAppService.openSystemSettingsLoginItems()
+            }
+        }
+        if let error = launchAtLogin.lastError {
+            Text(error)
+        }
+        Divider()
+        Button("Quit Notch") {
+            NSApplication.shared.terminate(nil)
+        }
     }
 
     private func activityContent(for module: any NotchModule) -> some View {

@@ -76,3 +76,34 @@ struct ReduceMotionTests {
         #expect(normal.activityAnimation != reduced.activityAnimation)
     }
 }
+
+@MainActor
+struct HoldOpenTests {
+    @Test func heldOpenNotchIgnoresCollapseRequests() async throws {
+        let model = NotchViewModel(geometry: .previewHardware)
+        model.expand()
+        model.holdOpen()
+        model.scheduleCollapse()
+        try await Task.sleep(for: .milliseconds(500))
+        #expect(model.isExpanded)
+    }
+
+    @Test func holdingOpenCancelsACollapseAlreadyInFlight() async throws {
+        let model = NotchViewModel(geometry: .previewHardware)
+        model.expand()
+        model.scheduleCollapse()
+        model.holdOpen()
+        try await Task.sleep(for: .milliseconds(500))
+        #expect(model.isExpanded)
+    }
+
+    @Test func afterReleaseTheNotchCanCollapseAgain() async throws {
+        let model = NotchViewModel(geometry: .previewHardware)
+        model.expand()
+        model.holdOpen()
+        model.releaseHold()
+        model.scheduleCollapse()
+        try await Task.sleep(for: .milliseconds(500))
+        #expect(!model.isExpanded)
+    }
+}

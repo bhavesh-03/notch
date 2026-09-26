@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var viewModel: NotchViewModel?
     private var monitors: [Any] = []
     private var screenChangeTask: Task<Void, Never>?
+    private var menuTrackingTasks: [Task<Void, Never>] = []
     private let notifications = NotificationService()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -27,8 +28,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.ignoresMouseEvents = true
         panel.orderFrontRegardless()
         
-        viewModel.onExpandedChange = { [weak panel] expanded in
+        viewModel.onExpandedChange = { [weak panel, weak viewModel] expanded in
             panel?.ignoresMouseEvents = !expanded
+            if expanded {
+                viewModel?.launchAtLogin.refresh()
+            }
         }
         
         self.panel = panel
@@ -66,6 +70,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             monitors.append(local)
         }
         
+        // While one of our menus is open the pointer is over the menu, not the notch;
+        // hold the notch open until the menu closes, then re-check where the pointer is.
+        menuTrackingTasks = [
+            Task { [weak self] in
+                for await _ in NotificationCenter.default.notifications(named: NSMenu.didBeginTrackingNotification) {
+                    self?.viewModel?.holdOpen()
+                }
+            },
+            Task { [weak self] in
+                for await _ in NotificationCenter.default.notifications(named: NSMenu.didEndTrackingNotification) {
+                    self?.viewModel?.releaseHold()
+                    self?.handleMouseMoved()
+                }
+            },
+        ]
+
         screenChangeTask = Task { [weak self] in
             for await _ in NotificationCenter.default.notifications(
                 named: NSApplication.didChangeScreenParametersNotification
