@@ -14,25 +14,25 @@ struct TimerState: Equatable {
         case running(endDate: Date)
         case paused(remaining: TimeInterval)
     }
-
+    
     let duration: TimeInterval
     private(set) var phase: Phase = .idle
-
+    
     init(duration: TimeInterval) {
         self.duration = duration
     }
-
+    
     func remaining(at now: Date) -> TimeInterval  {
         switch phase {
-                case .idle: duration
-                case .running(let endDate): max(0, endDate.timeIntervalSince(now))
-                case .paused(let remaining): remaining
-                }
+        case .idle: duration
+        case .running(let endDate): max(0, endDate.timeIntervalSince(now))
+        case .paused(let remaining): remaining
+        }
     }
     
     func isFinished(at now: Date) -> Bool  {
         if case .running = phase { return remaining(at: now) == 0 }
-                return false
+        return false
     }
     
     mutating func start(at now: Date)  {

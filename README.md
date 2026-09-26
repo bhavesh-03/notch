@@ -13,7 +13,7 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 | Works on any Mac: measures the notch per screen, falls back to a virtual pill on screens without one | ✅ Done |
 | Follows display changes (resolution, monitors, clamshell) | ✅ Done |
 | Battery level and charging / plugged-in state, live-updating | ✅ Done |
-| Timer / Pomodoro with completion notification | 🚧 In progress — countdown logic done |
+| Timer / Pomodoro with completion notification | 🚧 In progress — countdown logic and controller done, UI next |
 | Calendar — next event | 🗓 Planned |
 | File shelf — drag files onto the notch | 🗓 Planned |
 | Music / Now Playing controls | 🗓 Planned |
@@ -39,7 +39,7 @@ pkill -x Notch
 
 ## Running the tests
 
-The pure logic (`TimerState`, `NotchGeometry`, `BatteryStatus`) is covered by Swift Testing unit tests in `NotchTests/`. Run them with **⌘U** in Xcode, or:
+The logic (`TimerState`, `TimerController`, `NotchGeometry`, `BatteryStatus`) is covered by Swift Testing unit tests in `NotchTests/`. Run them with **⌘U** in Xcode, or:
 
 ```bash
 xcodebuild test -project Notch.xcodeproj -scheme Notch -destination 'platform=macOS'
@@ -77,6 +77,7 @@ NotchApp ──▶ AppDelegate ──creates──▶ NotchPanel (borderless NSP
 | `BatteryStatus.swift` | Pure battery value type and icon selection |
 | `BatteryMonitor.swift` | IOKit power-source reading and change notifications |
 | `TimerState.swift` | Pure countdown state machine (idle / running / paused), date-based so it survives sleep |
+| `TimerController.swift` | Live timer: injectable clock, schedules a single wake-up at the end date, `onFinish` hook |
 | `NotchTests/` | Swift Testing unit tests for the pure logic: timer, geometry, battery parsing |
 
 ## Known limitations

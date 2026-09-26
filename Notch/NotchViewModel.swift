@@ -10,6 +10,7 @@ final class NotchViewModel {
     private var collapseTask : Task<Void, Never>?
     var geometry: NotchGeometry
     let battery = BatteryMonitor()
+    let timer = TimerController()
     
     init(geometry: NotchGeometry) {
         self.geometry = geometry
