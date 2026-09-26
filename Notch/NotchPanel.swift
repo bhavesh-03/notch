@@ -28,6 +28,10 @@ final class NotchPanel: NSPanel {
             .fullScreenAuxiliary,
             .ignoresCycle
         ]
+        
+        becomesKeyOnlyIfNeeded = true
     }
+    
+    override var canBecomeKey: Bool { true }
     
 }
