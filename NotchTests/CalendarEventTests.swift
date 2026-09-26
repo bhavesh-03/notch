@@ -41,3 +41,53 @@ struct CalendarEventTests {
         #expect(CalendarEvent.next(in: [], at: now) == nil)
     }
 }
+
+@MainActor
+struct CalendarTimingTests {
+    let start = Date(timeIntervalSinceReferenceDate: 100_000)
+    var event: CalendarEvent {
+        CalendarEvent(id: "standup", title: "Standup", start: start, end: start + 1800, isAllDay: false)
+    }
+
+    @Test(arguments: [
+        (-3600.0, false), (-601.0, false), (-600.0, true), (-60.0, true),
+        (0.0, true), (299.0, true), (300.0, false), (1799.0, false),
+    ])
+    func imminentFromTenMinutesBeforeToFiveAfter(offset: TimeInterval, imminent: Bool) {
+        #expect(event.isImminent(at: start + offset) == imminent)
+    }
+
+    @Test func shortEventStopsBeingImminentWhenItEnds() {
+        let short = CalendarEvent(id: "s", title: "Quick sync", start: start, end: start + 120, isAllDay: false)
+        #expect(short.isImminent(at: start + 60))
+        #expect(!short.isImminent(at: start + 120))
+    }
+
+    @Test(arguments: [(-600.0, 10), (-599.0, 10), (-540.0, 9), (-1.0, 1), (0.0, 0), (60.0, 0)])
+    func minutesUntilStartRoundsUp(offset: TimeInterval, minutes: Int) {
+        #expect(event.minutesUntilStart(at: start + offset) == minutes)
+    }
+
+    @Test func boundariesAreVisitedInOrder() {
+        var now = start - 3600
+        var visited: [TimeInterval] = []
+        while let next = event.nextBoundary(after: now) {
+            visited.append(next.timeIntervalSince(start))
+            now = next
+        }
+        #expect(visited == [-600, 0, 300, 1800])
+    }
+
+    @Test func startIsDetectedOnceForTheSameEvent() {
+        let before = start - 30
+        let after = start + 30
+        #expect(CalendarEvent.didStart(event, previous: event, since: before, at: after))
+        #expect(!CalendarEvent.didStart(event, previous: event, since: after, at: after + 60), "already in progress")
+        #expect(!CalendarEvent.didStart(event, previous: nil, since: before, at: after), "no previous reading, e.g. launch mid-meeting")
+    }
+
+    @Test func aDifferentEventStartingIsNotReportedAsThisOneStarting() {
+        let other = CalendarEvent(id: "other", title: "Other", start: start - 3600, end: start - 60, isAllDay: false)
+        #expect(!CalendarEvent.didStart(event, previous: other, since: start - 30, at: start + 30))
+    }
+}

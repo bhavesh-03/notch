@@ -4,6 +4,8 @@ struct ContentView: View {
 
     let viewModel: NotchViewModel
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var geometry: NotchGeometry { viewModel.geometry }
 
     private var size: CGSize {
@@ -36,11 +38,12 @@ struct ContentView: View {
                 switch viewModel.presentation {
                 case .collapsed:
                     collapsedContent
+                        .transition(NotchMotion.content(reduceMotion: reduceMotion))
                 case .expanded:
                     expandedContent
                 case .activity(let module):
                     activityContent(for: module)
-                        .transition(.opacity)
+                        .transition(NotchMotion.content(reduceMotion: reduceMotion))
                 }
             }
             .foregroundStyle(.white)

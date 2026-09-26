@@ -1,15 +1,49 @@
 import SwiftUI
 
 extension CalendarMonitor: NotchModule {
-    var earPriority: Int? { nil }
+    /// Above the battery (0), below an active timer (10), and only while the event is imminent.
+    var earPriority: Int? {
+        guard let nextEvent, nextEvent.isImminent(at: evaluatedAt) else { return nil }
+        return 5
+    }
 
     @ViewBuilder
     func content(for placement: NotchPlacement) -> some View {
         switch placement {
         case .expanded:
             CalendarSection(calendar: self)
-        case .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail:
-            EmptyView()
+        case .leadingEar, .activityLeading:
+            Image(systemName: "calendar")
+                .font(placement == .activityLeading ? .title2 : nil)
+        case .trailingEar, .pill:
+            if let nextEvent {
+                StartsIn(event: nextEvent)
+                    .font(placement == .pill ? .caption : .caption2)
+            }
+        case .activityTrailing:
+            Text("Now")
+                .font(.title3.bold())
+                .foregroundStyle(.red)
+        case .activityDetail:
+            if let nextEvent {
+                Text(nextEvent.title)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .padding(.horizontal, 16)
+            }
+        }
+    }
+}
+
+/// "8 min" counting down each minute, then "Now".
+private struct StartsIn: View {
+    let event: CalendarEvent
+
+    var body: some View {
+        TimelineView(.everyMinute) { context in
+            Text(event.isInProgress(at: context.date) ? "Now" : "\(event.minutesUntilStart(at: context.date)) min")
+                .monospacedDigit()
+                .fixedSize()
         }
     }
 }

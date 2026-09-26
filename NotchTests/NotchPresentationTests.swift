@@ -69,7 +69,10 @@ struct ReduceMotionTests {
     @Test func activityAnimationRespectsReduceMotion() {
         let normal = NotchViewModel(geometry: .previewHardware, reduceMotion: { false })
         let reduced = NotchViewModel(geometry: .previewHardware, reduceMotion: { true })
-        #expect(normal.activityAnimation == .bouncy)
+        #expect(normal.activityAnimation == NotchMotion.activityOpen(reduceMotion: false))
         #expect(reduced.activityAnimation == .easeInOut(duration: 0.2))
+        #expect(normal.activityCloseAnimation == NotchMotion.activityClose(reduceMotion: false))
+        #expect(reduced.activityCloseAnimation == .easeInOut(duration: 0.2))
+        #expect(normal.activityAnimation != reduced.activityAnimation)
     }
 }

@@ -47,6 +47,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let viewModel else { return }
             viewModel.showActivity(from: viewModel.battery)
         }
+
+        viewModel.calendar.onEventStarted = { [weak viewModel] _ in
+            guard let viewModel else { return }
+            viewModel.showActivity(from: viewModel.calendar)
+        }
         
         if let global = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved, handler: { [weak self] _ in
             self?.handleMouseMoved()

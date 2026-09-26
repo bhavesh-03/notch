@@ -46,7 +46,11 @@ final class NotchViewModel {
 
     /// Springs normally; a short, bounce-free ease when the user has asked for less motion.
     var activityAnimation: Animation {
-        reduceMotion() ? .easeInOut(duration: 0.2) : .bouncy
+        NotchMotion.activityOpen(reduceMotion: reduceMotion())
+    }
+
+    var activityCloseAnimation: Animation {
+        NotchMotion.activityClose(reduceMotion: reduceMotion())
     }
 
     func expand() {
@@ -88,7 +92,7 @@ final class NotchViewModel {
             guard !Task.isCancelled else { return }
 
             if case .activity = presentation {
-                withAnimation(.snappy) {
+                withAnimation(activityCloseAnimation) {
                     presentation = .collapsed
                 }
             }

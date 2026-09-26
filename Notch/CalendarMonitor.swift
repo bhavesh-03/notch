@@ -10,9 +10,13 @@ final class CalendarMonitor {
 
     private(set) var access: Access
     private(set) var nextEvent: CalendarEvent?
+    /// When the event was last evaluated; observed, so views re-render at each scheduled wake-up.
+    private(set) var evaluatedAt = Date()
 
+    @ObservationIgnored var onEventStarted: ((CalendarEvent) -> Void)?
     @ObservationIgnored private let store = EKEventStore()
     @ObservationIgnored private var changeTask: Task<Void, Never>?
+    @ObservationIgnored private var wakeTask: Task<Void, Never>?
 
     init() {
         access = Self.currentAccess()
@@ -38,7 +42,29 @@ final class CalendarMonitor {
             calendars: nil
         )
         let events = store.events(matching: predicate).map { CalendarEvent($0) }
+
+        let previous = nextEvent
+        let previousEvaluation = evaluatedAt
         nextEvent = CalendarEvent.next(in: events, at: now)
+        evaluatedAt = now
+
+        if let nextEvent, CalendarEvent.didStart(nextEvent, previous: previous, since: previousEvaluation, at: now) {
+            onEventStarted?(nextEvent)
+        }
+        scheduleWake()
+    }
+
+    /// Sleeps until the next moment the display should change, instead of polling.
+    private func scheduleWake() {
+        wakeTask?.cancel()
+        let wakeAt = nextEvent?.nextBoundary(after: evaluatedAt) ?? evaluatedAt.addingTimeInterval(3600)
+        let delay = wakeAt.timeIntervalSince(evaluatedAt) + 0.5
+
+        wakeTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled else { return }
+            self?.refresh()
+        }
     }
 
     private func startObserving() {
