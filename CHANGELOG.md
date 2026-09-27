@@ -2,7 +2,7 @@
 
 All notable changes to Notch. Versions follow [Semantic Versioning](https://semver.org): new features bump the minor version, fixes bump the patch version.
 
-## Unreleased (planned as 1.1.0)
+## 1.1.0 — 2026-09-27
 
 ### Added
 - **Tabs** in the expanded notch: **Home** and **Files**. The file shelf moved into the Files tab and now holds 12 files; dragging a file onto the notch opens Files automatically from any tab.
