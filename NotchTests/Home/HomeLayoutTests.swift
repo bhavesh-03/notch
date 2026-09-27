@@ -12,7 +12,7 @@ struct HomeLayoutTests {
         Dictionary(uniqueKeysWithValues: layout.arranged(columns: columns).placed.map { ($0.widget.kind, [$0.column, $0.row]) })
     }
 
-    @Test(arguments: [(480.0, 4), (NotchGeometry.defaultExpandedWidth, 5), (620.0, 6)])
+    @Test(arguments: [(480.0, 4), (540.0, 5), (620.0, 6)])
     func columnsFollowTheNotchWidth(width: CGFloat, columns: Int) {
         #expect(HomeLayout.columns(forWidth: width) == columns)
     }

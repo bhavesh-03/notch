@@ -30,6 +30,8 @@ final class NotchViewModel {
     @ObservationIgnored private var expandTask: Task<Void, Never>?
     private var activityTask: Task<Void, Never>?
     @ObservationIgnored private var isHeldOpen = false
+    /// Arranging Home's widgets; the notch stays open until Done.
+    private(set) var isEditingHome = false
     var geometry: NotchGeometry
     let battery = BatteryMonitor()
     let timer: TimerController
@@ -189,8 +191,19 @@ final class NotchViewModel {
         isHeldOpen = false
     }
 
+    func beginEditingHome() {
+        selectedTab = nil
+        isEditingHome = true
+        collapseTask?.cancel()
+        collapseTask = nil
+    }
+
+    func endEditingHome() {
+        isEditingHome = false
+    }
+
     func scheduleCollapse() {
-        guard isExpanded, !isHeldOpen, collapseTask == nil else { return }
+        guard isExpanded, !isHeldOpen, !isEditingHome, collapseTask == nil else { return }
 
         collapseTask = Task {
             try? await Task.sleep(for: .milliseconds(300))

@@ -102,13 +102,51 @@ struct NotchView: View {
             .id(viewModel.selectedTab)
             .transition(NotchMotion.earContent(reduceMotion: reduceMotion, speed: motionSpeed))
 
-            if !viewModel.tabModules.isEmpty {
+            if viewModel.isEditingHome {
+                editBar
+            } else if !viewModel.tabModules.isEmpty {
                 tabBar
             }
         }
         .animation(NotchMotion.earHandover(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.selectedTab)
         .environment(\.openNotchPage, OpenNotchPageAction { [viewModel] module in viewModel.select(tab: module) })
         .transition(.opacity)
+    }
+
+    private var homeColumns: Int {
+        HomeLayout.columns(forWidth: geometry.expandedWidth)
+    }
+
+    /// Replaces the tabs while arranging Home: Add Widget on the left, Done on the right of the camera.
+    private var editBar: some View {
+        HStack(spacing: 10) {
+            AddWidgetMenu(settings: viewModel.settings)
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .font(.caption.weight(.medium))
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4)
+                .background(.white.opacity(0.18), in: Capsule())
+                .fixedSize()
+            OverflowNote(settings: viewModel.settings, columns: homeColumns)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.5))
+                .lineLimit(1)
+            Spacer()
+            Button {
+                withAnimation(.snappy) { viewModel.endEditingHome() }
+            } label: {
+                Text("Done")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(.white, in: Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 22)
+        .frame(height: geometry.notchRect.height)
     }
 
     /// Home and the labelled tabs left of the camera; icon buttons (like the mirror) right of it.
@@ -205,8 +243,19 @@ struct NotchView: View {
                     .overlay(.white.opacity(0.15))
                     .padding(.horizontal, 24)
             }
-            if viewModel.homeWidgets.isEmpty {
-                Text("Nothing on Home. Right-click for Settings.")
+            if viewModel.isEditingHome {
+                HomeLayoutEditor(settings: viewModel.settings, columns: homeColumns) { widget in
+                    // The live widget, just not tappable while arranging.
+                    HomeWidgetView(kind: widget.kind, size: widget.size, viewModel: viewModel)
+                        .padding(8)
+                        .allowsHitTesting(false)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 6)
+                .padding(.bottom, 10)
+                .frame(maxHeight: .infinity)
+            } else if viewModel.homeWidgets.isEmpty {
+                Text("Nothing on Home. Right-click → Edit Home to add widgets.")
                     .font(.callout)
                     .foregroundStyle(.white.opacity(0.5))
                     .frame(maxHeight: .infinity)
@@ -239,6 +288,10 @@ struct NotchView: View {
             Text(error)
         }
         Divider()
+        Button("Edit Home…") {
+            withAnimation(.snappy) { viewModel.beginEditingHome() }
+        }
+        .disabled(viewModel.isEditingHome)
         Button("Settings…") {
             viewModel.onOpenSettings?()
         }

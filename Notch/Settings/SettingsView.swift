@@ -4,11 +4,12 @@ import SwiftUI
 /// left, controls on the right, explanations under each section. The window shows them as toolbar
 /// tabs (see `SettingsWindowController`).
 enum SettingsTab: CaseIterable {
-    case features, look, behavior, timer
+    case features, home, look, behavior, timer
 
     var title: String {
         switch self {
         case .features: "Features"
+        case .home: "Home"
         case .look: "Look"
         case .behavior: "Behavior"
         case .timer: "Timer"
@@ -18,6 +19,7 @@ enum SettingsTab: CaseIterable {
     var symbol: String {
         switch self {
         case .features: "square.grid.2x2"
+        case .home: "rectangle.3.group"
         case .look: "paintbrush"
         case .behavior: "cursorarrow.motionlines"
         case .timer: "timer"
@@ -28,6 +30,7 @@ enum SettingsTab: CaseIterable {
     var size: CGSize {
         switch self {
         case .features: CGSize(width: 500, height: 456)
+        case .home: CGSize(width: 500, height: 400)
         case .look: CGSize(width: 500, height: 440)
         case .behavior: CGSize(width: 500, height: 492)
         case .timer: CGSize(width: 500, height: 568)
@@ -39,6 +42,7 @@ enum SettingsTab: CaseIterable {
         Group {
             switch self {
             case .features: FeaturesSettings(settings: settings)
+            case .home: HomeSettings(settings: settings)
             case .look: LookSettings(settings: settings)
             case .behavior: BehaviorSettings(settings: settings)
             case .timer: TimerSettings(settings: settings)
@@ -83,6 +87,73 @@ struct FeaturesSettings: View {
             }
             ResetSection { settings.resetFeatures() }
         }
+    }
+}
+
+/// Home's widgets: the same editor as Edit Home in the notch, with labelled tiles.
+struct HomeSettings: View {
+    let settings: NotchSettings
+
+    private var columns: Int { HomeLayout.columns(forWidth: settings.width.points) }
+
+    var body: some View {
+        Form {
+            Section {
+                HomeLayoutEditor(settings: settings, columns: columns, spacing: 6, cornerRadius: 10) { widget in
+                    WidgetDiagramTile(widget: widget)
+                }
+                .frame(height: 150)
+                .padding(.vertical, 8)
+                .environment(\.colorScheme, .dark)
+                .environment(\.notchAccent, settings.accent.color)
+                .padding(10)
+                .background(.black, in: .rect(cornerRadius: 14, style: .continuous))
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Drag a widget to move it, drag its corner to resize, − to remove. \(settings.width.title) width has \(columns) columns; on Home, widgets grow to fill any gaps.")
+                    OverflowNote(settings: settings, columns: columns)
+                        .foregroundStyle(.orange)
+                }
+                .foregroundStyle(.secondary)
+            }
+
+            Section {
+                HStack {
+                    AddWidgetMenu(settings: settings)
+                        .fixedSize()
+                    Spacer()
+                    Button("Reset") { settings.homeLayout = .default }
+                }
+            } footer: {
+                Text("You can also arrange Home right in the notch: right-click it and choose Edit Home.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+/// A widget in the Settings editor: its icon, name and size, on an accent tint.
+private struct WidgetDiagramTile: View {
+    let widget: HomeWidget
+    @Environment(\.notchAccent) private var accent
+
+    var body: some View {
+        VStack(spacing: 3) {
+            Image(systemName: widget.kind.symbol)
+                .font(.system(size: widget.size == .small ? 13 : 17, weight: .semibold))
+            if widget.size != .small {
+                Text(widget.kind.title)
+                    .font(.caption.weight(.semibold))
+            }
+            Text(widget.size == .small ? widget.kind.shortTitle : widget.size.title)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.6))
+        }
+        .foregroundStyle(.white)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(accent.opacity(0.18))
     }
 }
 

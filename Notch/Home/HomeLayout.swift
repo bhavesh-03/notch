@@ -229,3 +229,74 @@ struct HomeLayout: Codable, Equatable {
         }
     }
 }
+
+extension WidgetSize {
+    /// The size covering this many cells, clamped to what exists (1–2 each way).
+    init(columns: Int, rows: Int) {
+        switch (columns >= 2, rows >= 2) {
+        case (true, true): self = .large
+        case (false, true): self = .tall
+        case (true, false): self = .wide
+        case (false, false): self = .small
+        }
+    }
+}
+
+// MARK: - Editing
+
+/// The edits the layout editor makes. Pure functions on the list, so they're tested without any UI.
+/// `visible` is the kinds currently shown (their feature is on); hidden ones keep their place in the
+/// saved list untouched.
+extension HomeLayout {
+    func contains(_ kind: HomeWidgetKind) -> Bool {
+        widgets.contains { $0.kind == kind }
+    }
+
+    mutating func add(_ kind: HomeWidgetKind, size: WidgetSize = .small) {
+        guard !contains(kind) else { return }
+        widgets.append(HomeWidget(kind: kind, size: size))
+    }
+
+    mutating func remove(_ kind: HomeWidgetKind) {
+        widgets.removeAll { $0.kind == kind }
+    }
+
+    mutating func resize(_ kind: HomeWidgetKind, to size: WidgetSize) {
+        guard let index = widgets.firstIndex(where: { $0.kind == kind }) else { return }
+        widgets[index].size = size
+    }
+
+    /// Moves a widget being dragged to the cell under the pointer, the way iOS widgets do:
+    /// over another widget, the two trade places in the order; over an empty cell, it goes to the
+    /// place in the order that cell corresponds to. Returns whether anything changed.
+    @discardableResult
+    mutating func move(_ kind: HomeWidgetKind, toColumn column: Int, row: Int, columns: Int, visible: Set<HomeWidgetKind>) -> Bool {
+        guard let dragged = widgets.first(where: { $0.kind == kind }) else { return false }
+        let shown = HomeLayout(widgets: widgets.filter { visible.contains($0.kind) })
+        let placed = shown.arranged(columns: columns).placed
+
+        let anchor: (kind: HomeWidgetKind, after: Bool)?
+        if let target = placed.first(where: { $0.covers(column: column, row: row) }) {
+            guard target.widget.kind != kind else { return false }
+            let order = shown.widgets.map(\.kind)
+            // Moving forward lands after the widget it's over; moving back lands before it.
+            let movingForward = (order.firstIndex(of: kind) ?? 0) < (order.firstIndex(of: target.widget.kind) ?? 0)
+            anchor = (target.widget.kind, movingForward)
+        } else {
+            // An empty cell: before the first widget that comes after it in reading order.
+            let others = HomeLayout(widgets: shown.widgets.filter { $0.kind != kind }).arranged(columns: columns).placed
+            let key = column * Self.rows + row
+            anchor = others.first { $0.column * Self.rows + $0.row > key }.map { ($0.widget.kind, false) }
+        }
+
+        var reordered = widgets.filter { $0.kind != kind }
+        if let anchor, let index = reordered.firstIndex(where: { $0.kind == anchor.kind }) {
+            reordered.insert(dragged, at: anchor.after ? index + 1 : index)
+        } else {
+            reordered.append(dragged)
+        }
+        guard reordered != widgets else { return false }
+        widgets = reordered
+        return true
+    }
+}
