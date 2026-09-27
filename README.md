@@ -27,13 +27,24 @@ Built from scratch as a hands-on way to learn Swift, SwiftUI and AppKit.
 | File shelf: Quick Look thumbnails, drag files back out, right-click Open / Show in Finder / Remove / Clear | ✅ Done |
 | Now Playing from any app (browsers, web apps, Music, Spotify…): source app and live indicator in the ears | ✅ Done |
 | Now Playing: player row with progress and ⏮ ⏯ ⏭ above the modules; activity on track change | ✅ Done |
-| Distribution: Developer ID signing, notarization, app icon | ⏳ Next |
+| App icon, and a one-command Release install to /Applications | ✅ Done |
+| Distribution to other Macs: Developer ID signing and notarization (needs the paid Apple Developer Program) | 🗓 Optional |
 
 ## Requirements
 
 - macOS 27 or later
 - Xcode 27
 - A MacBook with a notch for the full experience (other displays get a virtual notch)
+
+## Installing
+
+```bash
+Tools/install.sh
+```
+
+Builds the Release configuration, verifies its signature, quits any running copy, replaces `/Applications/Notch.app`, and launches it. Run it again after making changes to update the installed app. Then right-click the expanded notch and turn on **Launch at Login** (once; it survives updates because the path stays the same).
+
+Permissions (calendar, notifications) and saved data carry over between the installed app and builds run from Xcode, because they share the bundle ID and signing team. Don't run both at the same time — quit the installed copy before pressing ⌘R.
 
 ## Building and running
 
@@ -115,6 +126,7 @@ Notch/
 
 NowPlayingBridge/           Objective-C dynamic library loaded into /usr/bin/perl (see "Now Playing")
 NotchTests/                 Swift Testing suites, mirroring the structure above
+Tools/                      install.sh (Release build → /Applications) and MakeAppIcon.swift (draws the app icon)
 Notch.entitlements          Entitlements with no build-setting equivalent (security-scoped bookmarks)
 ```
 
@@ -123,7 +135,7 @@ Each feature follows the same pattern: a pure value type with the logic (tested)
 ## Known limitations
 
 - The right-click menu is only reachable once the notch is expanded (the collapsed notch lets clicks pass through to the menu bar).
-- A login item registered from a debug build points at that build in DerivedData.
+- Builds are signed with a development certificate, so they run on this Mac; sharing the app with other Macs needs Developer ID signing and notarization.
 - Now Playing depends on private macOS behavior and may break in a future macOS release; the notch keeps working without it.
 - The expanded size is fixed at 400×150.
 - The timer length is fixed at 25 minutes.
