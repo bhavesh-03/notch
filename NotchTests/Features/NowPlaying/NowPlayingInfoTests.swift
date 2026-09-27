@@ -4,7 +4,7 @@ import Testing
 
 @MainActor
 struct NowPlayingInfoTests {
-    let line = #"{"active":true,"album":"Album","appBundleIdentifier":"com.apple.Safari.WebApp.X","appName":"YT Music","artist":"Artist","duration":200,"elapsedTime":30,"isPlaying":true,"playbackRate":1,"timestamp":1000,"title":"Song"}"#
+    let line = #"{"elected":"com.apple.Safari.WebApp.X","players":[{"album":"Album","appBundleIdentifier":"com.apple.Safari.WebApp.X","appName":"YT Music","artist":"Artist","duration":200,"elapsedTime":30,"isPlaying":true,"playbackRate":1,"timestamp":1000,"title":"Song"},{"album":"","appBundleIdentifier":"com.spotify.client","appName":"Spotify","artist":"Other","duration":180,"elapsedTime":5,"isPlaying":false,"playbackRate":0,"timestamp":1000,"title":"Other Song"}]}"#
 
     private func info(isPlaying: Bool = true, rate: Double = 1, elapsed: Double = 30, duration: Double = 200) -> NowPlayingInfo {
         NowPlayingInfo(title: "Song", artist: "Artist", album: "", duration: duration, elapsedTime: elapsed,
@@ -13,19 +13,38 @@ struct NowPlayingInfoTests {
     }
 
     @Test func decodesABridgeLine() throws {
-        let decoded = try #require(try NowPlayingInfo.decode(line: Data(line.utf8)))
-        #expect(decoded.title == "Song")
-        #expect(decoded.appName == "YT Music")
-        #expect(decoded.isPlaying)
-        #expect(decoded.timestamp == Date(timeIntervalSince1970: 1000))
+        let snapshot = try NowPlayingSnapshot.decode(line: Data(line.utf8))
+        #expect(snapshot.electedID == "com.apple.Safari.WebApp.X")
+        #expect(snapshot.players.map(\.appName) == ["YT Music", "Spotify"])
+        let first = try #require(snapshot.players.first)
+        #expect(first.title == "Song")
+        #expect(first.isPlaying)
+        #expect(first.timestamp == Date(timeIntervalSince1970: 1000))
+        #expect(first.id == "com.apple.Safari.WebApp.X")
     }
 
-    @Test func inactiveMeansNothingPlaying() throws {
-        #expect(try NowPlayingInfo.decode(line: Data(#"{"active":false}"#.utf8)) == nil)
+    @Test func nothingLoadedIsAnEmptySnapshot() throws {
+        let snapshot = try NowPlayingSnapshot.decode(line: Data(#"{"players":[]}"#.utf8))
+        #expect(snapshot == .empty)
     }
 
     @Test func garbageIsAnError() {
-        #expect(throws: (any Error).self) { try NowPlayingInfo.decode(line: Data("not json".utf8)) }
+        #expect(throws: (any Error).self) { try NowPlayingSnapshot.decode(line: Data("not json".utf8)) }
+        #expect(throws: (any Error).self) { try NowPlayingSnapshot.decode(line: Data(#"{"error":"MediaRemote unavailable"}"#.utf8)) }
+    }
+
+    @Test(arguments: [(NowPlayingBridgeProcess.Command.toggle, "playpause"), (.next, "next track"), (.previous, "previous track")])
+    func scriptsForScriptableApps(command: NowPlayingBridgeProcess.Command, verb: String) {
+        #expect(NowPlayingScripting.source(for: command, in: "com.apple.Music") == "tell application id \"com.apple.Music\" to \(verb)")
+        #expect(NowPlayingScripting.source(for: command, in: "com.google.Chrome") == nil)
+    }
+
+    @Test(arguments: [("company.thebrowser.Browser", true), ("com.google.Chrome", true), ("com.apple.Safari", true),
+                      ("com.apple.Safari.WebApp.X", false), ("com.spotify.client", false), ("com.apple.Music", false)])
+    func browsersAreRecognized(bundleIdentifier: String, isBrowser: Bool) {
+        let player = NowPlayingInfo(title: "Song", artist: "", album: "", duration: 0, elapsedTime: 0, playbackRate: 0,
+                                    timestamp: .now, isPlaying: false, appName: "", appBundleIdentifier: bundleIdentifier)
+        #expect(player.isFromBrowser == isBrowser)
     }
 
     @Test func positionAdvancesWhilePlaying() {

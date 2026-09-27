@@ -1,9 +1,54 @@
 import AppKit
 
 /// Publishes what's playing anywhere on the Mac (browsers, web apps, Music, Spotify…) and sends media commands.
+///
+/// Several apps can have something loaded at once. The player row shows one of them (`info`): the one
+/// the user picked, or else the one that's playing. Commands reach it by the most reliable route.
 @Observable
 final class NowPlayingMonitor {
-    private(set) var info: NowPlayingInfo?
+    /// Every app with something loaded.
+    private(set) var players: [NowPlayingInfo] = []
+    /// macOS's "now playing" pick: media keys and system commands go to it.
+    private(set) var electedID: String?
+    /// The player the user chose in the switcher; cleared when another app starts playing.
+    private(set) var selectedID: String?
+
+    /// The player the notch shows and controls.
+    var info: NowPlayingInfo? {
+        if let selectedID, let chosen = players.first(where: { $0.id == selectedID }) { return chosen }
+        return Self.preferred(in: players, electedID: electedID)
+    }
+
+    /// With nothing chosen: macOS's pick if it's playing, else anything playing, else the pick, else any.
+    static func preferred(in players: [NowPlayingInfo], electedID: String?) -> NowPlayingInfo? {
+        let elected = players.first { $0.id == electedID }
+        if let elected, elected.isPlaying { return elected }
+        return players.first(where: \.isPlaying) ?? elected ?? players.first
+    }
+
+    /// How a command reaches a player.
+    enum ControlRoute: Equatable {
+        /// macOS's pick: the system media command.
+        case system
+        /// Another app that takes AppleScript (Spotify, Music).
+        case script
+        /// Can't be reached reliably from here: offer to open the app instead of guessing.
+        case openApp
+    }
+
+    func route(for player: NowPlayingInfo) -> ControlRoute {
+        if player.id == electedID { return .system }
+        if NowPlayingScripting.supports(player.appBundleIdentifier) { return .script }
+        return .openApp
+    }
+
+    /// Runs AppleScript; replaceable in tests.
+    @ObservationIgnored var runScript: (String) -> Bool = NowPlayingScripting.run
+    /// Brings an app forward; replaceable in tests.
+    @ObservationIgnored var openApp: (String) -> Void = { bundleIdentifier in
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) else { return }
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+    }
     /// The app you're using right now; while it's the one playing, the notch doesn't repeat it.
     private(set) var frontmostAppBundleIdentifier: String?
 
@@ -24,8 +69,8 @@ final class NowPlayingMonitor {
         guard !isStarted, let libraryURL else { return }
         isStarted = true
 
-        bridge.onUpdate = { [weak self] info in
-            self?.receive(info)
+        bridge.onUpdate = { [weak self] snapshot in
+            self?.receive(snapshot ?? .empty)
         }
         watchFrontmostApp()
         bridge.onExit = { [weak self] in
@@ -43,13 +88,22 @@ final class NowPlayingMonitor {
         restartTask?.cancel()
         bridge.onExit = nil
         bridge.stop()
-        info = nil
+        receive(.empty)
     }
 
     /// A report from the bridge. Announces a new track, unless you're already looking at its app.
-    func receive(_ info: NowPlayingInfo?) {
-        let previous = self.info
-        self.info = info
+    func receive(_ snapshot: NowPlayingSnapshot) {
+        let previous = info
+        let wasPlaying = Set(players.filter(\.isPlaying).map(\.id))
+        players = snapshot.players
+        electedID = snapshot.electedID
+
+        // Another app starting to play takes over the row again; a vanished choice is forgotten.
+        let startedPlaying = players.filter { $0.isPlaying && !wasPlaying.contains($0.id) }.map(\.id)
+        if let selectedID, startedPlaying.contains(where: { $0 != selectedID }) || !players.contains(where: { $0.id == selectedID }) {
+            self.selectedID = nil
+        }
+
         if let info, info.isNewTrack(after: previous), !isSourceInFront {
             onTrackChanged?(info)
         }
@@ -73,14 +127,37 @@ final class NowPlayingMonitor {
         }
     }
 
+    /// Sends a command to the player the row shows.
     func send(_ command: NowPlayingBridgeProcess.Command) {
-        bridge.send(command)
+        guard let info else { return }
+        send(command, to: info)
+    }
+
+    func send(_ command: NowPlayingBridgeProcess.Command, to player: NowPlayingInfo) {
+        switch route(for: player) {
+        case .system:
+            bridge.send(command)
+        case .script:
+            guard let source = NowPlayingScripting.source(for: command, in: player.appBundleIdentifier),
+                  runScript(source)
+            else {
+                openApp(player.appBundleIdentifier)   // permission declined or the app didn't answer
+                return
+            }
+        case .openApp:
+            openApp(player.appBundleIdentifier)
+        }
+    }
+
+    /// The user picked a player in the switcher.
+    func select(_ player: NowPlayingInfo) {
+        selectedID = player.id
     }
 
     /// If the bridge dies (e.g. a macOS update breaks it), try again after a pause instead of spinning.
     private func scheduleRestart(libraryURL: URL) {
         guard isStarted else { return }
-        info = nil
+        receive(.empty)
         restartTask?.cancel()
         restartTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(10))

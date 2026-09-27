@@ -7,7 +7,8 @@ final class NowPlayingBridgeProcess {
         case toggle, next, previous
     }
 
-    var onUpdate: ((NowPlayingInfo?) -> Void)?
+    /// A new snapshot; nil for a line that couldn't be read (e.g. the bridge reporting an error).
+    var onUpdate: ((NowPlayingSnapshot?) -> Void)?
     var onExit: (() -> Void)?
 
     private var process: Process?
@@ -49,7 +50,7 @@ final class NowPlayingBridgeProcess {
                 handle.readabilityHandler = nil
                 return
             }
-            let updates = buffer.append(chunk).map { try? NowPlayingInfo.decode(line: $0) }
+            let updates = buffer.append(chunk).map { try? NowPlayingSnapshot.decode(line: $0) }
             Task { @MainActor in
                 for update in updates { self?.onUpdate?(update) }
             }

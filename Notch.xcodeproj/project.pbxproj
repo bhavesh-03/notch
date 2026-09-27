@@ -398,6 +398,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Notch shows your next calendar event when you expand the notch.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Notch plays, pauses and skips tracks in Spotify and Music when you control them from the notch.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Notch shows your camera as a mirror while you have the mirror open. Nothing is recorded or saved.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -435,6 +436,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Notch shows your next calendar event when you expand the notch.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Notch plays, pauses and skips tracks in Spotify and Music when you control them from the notch.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Notch shows your camera as a mirror while you have the mirror open. Nothing is recorded or saved.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -13,6 +13,8 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 - **Look settings:** notch width (Compact, Standard, Wide), corner roundness, an accent color for the timer and playback progress, and whether the collapsed notch shows ears. A live preview follows your changes.
 - **Behavior settings:** a hover delay slider (0–1 s) before the notch opens (file drags still open it instantly), an on/off switch for each pop-up (charger, timer finished, meeting starting, new track), and an animation speed for the notch's motion.
 - **Timer settings:** the timer's length is remembered across launches (set with the ruler or in Settings), four editable preset chips on the timer page, and switches for the finish notification and its sound.
+- **Several players at once:** when more than one app has a track loaded, their icons appear beside the player controls to switch which one the notch shows and controls. Spotify and Music are controlled directly (macOS asks once for permission); other apps that aren't the Mac's current player get an Open button instead of controls that might reach the wrong app.
+- Music playing in a web browser (Arc, Chrome, Safari…) shows a music-note tile in the accent color instead of the browser's icon, since macOS doesn't say which site is playing or share its artwork.
 
 ### Changed
 - Page height changes (switching tabs, the player row appearing or leaving) use a slower, softer spring.

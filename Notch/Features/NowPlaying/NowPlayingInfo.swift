@@ -1,7 +1,7 @@
 import Foundation
 
 /// What's playing, as reported by the bridge. A plain value: decodable from one bridge line, fully testable.
-struct NowPlayingInfo: Equatable, Decodable {
+struct NowPlayingInfo: Equatable, Decodable, Identifiable {
     let title: String
     let artist: String
     let album: String
@@ -13,6 +13,25 @@ struct NowPlayingInfo: Equatable, Decodable {
     let isPlaying: Bool
     let appName: String
     let appBundleIdentifier: String
+
+    /// One player per app, so the app is the identity.
+    var id: String { appBundleIdentifier }
+
+    /// Whether a web browser is playing. macOS reports the browser, not the site, and doesn't share
+    /// the site's artwork, so the browser's icon would say nothing about the music.
+    var isFromBrowser: Bool { Self.browsers.contains(appBundleIdentifier) }
+
+    static let browsers: Set<String> = [
+        "company.thebrowser.Browser",        // Arc
+        "com.google.Chrome",
+        "com.apple.Safari",
+        "com.microsoft.edgemac",
+        "com.brave.Browser",
+        "org.mozilla.firefox",
+        "com.operasoftware.Opera",
+        "com.vivaldi.Vivaldi",
+        "com.kagi.kagimacOS",                // Orion
+    ]
 
     /// The playback position right now, extrapolated from the last report.
     func elapsed(at now: Date) -> TimeInterval {
@@ -33,16 +52,30 @@ struct NowPlayingInfo: Equatable, Decodable {
     func isFrom(app bundleIdentifier: String?) -> Bool {
         bundleIdentifier == appBundleIdentifier
     }
+}
 
-    /// Decodes one line from the bridge: an info when something is playing, nil when nothing is.
-    static func decode(line: Data) throws -> NowPlayingInfo? {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .secondsSince1970
-        guard try decoder.decode(Activity.self, from: line).active else { return nil }
-        return try decoder.decode(NowPlayingInfo.self, from: line)
+/// Everything playing (or paused with something loaded) on the Mac, from one bridge line.
+struct NowPlayingSnapshot: Equatable, Decodable {
+    /// Every app with a track loaded, in a stable order.
+    let players: [NowPlayingInfo]
+    /// The app macOS picked as "now playing": media keys and system commands go to it.
+    let electedID: String?
+
+    init(players: [NowPlayingInfo], electedID: String?) {
+        self.players = players
+        self.electedID = electedID
     }
 
-    private struct Activity: Decodable {
-        let active: Bool
+    static let empty = NowPlayingSnapshot(players: [], electedID: nil)
+
+    static func decode(line: Data) throws -> NowPlayingSnapshot {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+        return try decoder.decode(NowPlayingSnapshot.self, from: line)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case players
+        case electedID = "elected"
     }
 }
