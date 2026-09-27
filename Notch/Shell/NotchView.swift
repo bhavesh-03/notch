@@ -180,6 +180,8 @@ struct NotchView: View {
     private var appMenu: some View {
         let launchAtLogin = viewModel.launchAtLogin
 
+        Text(AppVersion.current)
+        Divider()
         Toggle("Launch at Login", isOn: Binding(
             get: { launchAtLogin.isEnabled },
             set: { launchAtLogin.setEnabled($0) }

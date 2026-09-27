@@ -47,6 +47,17 @@ Builds the Release configuration, verifies its signature, quits any running copy
 
 Permissions (calendar, notifications) and saved data carry over between the installed app and builds run from Xcode, because they share the bundle ID and signing team. Don't run both at the same time — quit the installed copy before pressing ⌘R.
 
+## Versions and releases
+
+The app has a version (`MARKETING_VERSION` in the project, e.g. `1.1.0`, following [Semantic Versioning](https://semver.org)) and a build number (set by `Tools/install.sh` to the number of git commits). Both appear at the top of the right-click menu, e.g. **Notch 1.1.0 (72)**. Changes are recorded in [CHANGELOG.md](CHANGELOG.md) under **Unreleased** as they're made.
+
+To release a version:
+
+1. Set **Version** (`MARKETING_VERSION`) in the Notch target to the new number.
+2. In `CHANGELOG.md`, rename **Unreleased** to that version and date.
+3. Commit, then tag it: `git tag -a v1.1.0 -m "Notch 1.1.0" && git push --follow-tags`.
+4. Run `Tools/install.sh`.
+
 ## Building and running
 
 1. Open `Notch.xcodeproj` in Xcode.
@@ -129,6 +140,7 @@ Notch/
 NowPlayingBridge/           Objective-C dynamic library loaded into /usr/bin/perl (see "Now Playing")
 NotchTests/                 Swift Testing suites, mirroring the structure above
 Tools/                      install.sh (Release build → /Applications) and MakeAppIcon.swift (draws the app icon)
+CHANGELOG.md                What changed in each version
 Notch.entitlements          Entitlements with no build-setting equivalent (security-scoped bookmarks)
 ```
 
