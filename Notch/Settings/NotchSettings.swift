@@ -77,6 +77,13 @@ final class NotchSettings {
     static let defaultCornerRadius: Double = 24
     static let cornerRadiusRange: ClosedRange<Double> = 12...32
 
+    /// Home's widgets and their sizes.
+    var homeLayout: HomeLayout {
+        didSet {
+            if let data = try? JSONEncoder().encode(homeLayout) { save(data, Keys.homeLayout) }
+        }
+    }
+
     /// Called when a setting changes the notch's geometry (its width, or its ears).
     @ObservationIgnored var onGeometryChanged: (() -> Void)?
 
@@ -97,6 +104,7 @@ final class NotchSettings {
         hoverDelay = (defaults.object(forKey: Keys.hoverDelay) as? Double)?.clamped(to: Self.hoverDelayRange) ?? 0
         animationSpeed = defaults.string(forKey: Keys.animationSpeed).flatMap(AnimationSpeed.init(rawValue:)) ?? .standard
         mutedPopUps = Set(Self.features(forKey: Keys.mutedPopUps, in: defaults))
+        homeLayout = defaults.data(forKey: Keys.homeLayout).flatMap { try? JSONDecoder().decode(HomeLayout.self, from: $0) } ?? .default
         timerLength = (defaults.object(forKey: Keys.timerLength) as? Double)?.clamped(to: TimerState.durationRange) ?? Self.defaultTimerLength
         timerPresets = Self.normalized(presets: defaults.array(forKey: Keys.timerPresets) as? [Double])
         showsTimerPresets = defaults.object(forKey: Keys.showsTimerPresets) as? Bool ?? true
@@ -220,6 +228,7 @@ final class NotchSettings {
         static let hoverDelay = "settings.hoverDelaySeconds"
         static let animationSpeed = "settings.animationSpeed"
         static let mutedPopUps = "settings.mutedPopUps"
+        static let homeLayout = "settings.homeLayout"
         static let timerLength = "settings.timerLength"
         static let timerPresets = "settings.timerPresets"
         static let showsTimerPresets = "settings.showsTimerPresets"

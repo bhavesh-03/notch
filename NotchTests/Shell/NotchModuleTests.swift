@@ -70,15 +70,7 @@ struct NotchModuleTests {
 }
 
 @MainActor
-struct ExpandedSectionTests {
-    @Test func modulesHaveAnExpandedSectionByDefault() {
-        #expect(NotchModuleTests.FakeModule("a", priority: nil).hasExpandedSection)
-    }
-
-    @Test func nowPlayingLivesOnlyInTheEarsForNow() {
-        #expect(!NowPlayingMonitor().hasExpandedSection)
-    }
-
+struct HeadlineTests {
     @Test func noModuleClaimsTheHeadlineByDefault() {
         let modules: [any NotchModule] = [NotchModuleTests.FakeModule("a", priority: 1), NotchModuleTests.FakeModule("b", priority: nil)]
         #expect(modules.headliner == nil)

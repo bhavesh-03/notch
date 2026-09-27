@@ -7,8 +7,6 @@ extension ShelfStore: NotchModule {
 
     var earPriority: Int? { nil }
 
-    /// Lives in its own tab rather than a Home column.
-    var hasExpandedSection: Bool { false }
 
     var tab: NotchTab? { NotchTab(title: "Files", symbol: "tray.full.fill") }
 
@@ -19,7 +17,7 @@ extension ShelfStore: NotchModule {
         switch placement {
         case .page:
             ShelfSection(shelf: self)
-        case .expanded, .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail, .headline:
+        case .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail, .headline:
             EmptyView()
         }
     }

@@ -55,10 +55,9 @@ struct NotchTabTests {
         #expect(model.selectedTab == nil)
     }
 
-    @Test func theTimerKeepsItsHomeColumnAndHasATallPage() {
+    @Test func theTimerIsOnHomeAndHasATallPage() {
         let model = model()
-        #expect(model.timer.hasExpandedSection, "still a column on Home")
-        #expect(!model.shelf.hasExpandedSection, "Files is a tab, not a column")
+        #expect(model.homeWidgets.contains { $0.kind == .timer }, "still on Home, as a widget")
         model.select(tab: model.timer)
         #expect(model.isTall)
         model.timer.start()

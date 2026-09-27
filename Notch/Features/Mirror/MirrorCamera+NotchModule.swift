@@ -6,7 +6,6 @@ extension MirrorCamera: NotchModule {
 
     var earPriority: Int? { nil }
 
-    var hasExpandedSection: Bool { false }
 
     var tab: NotchTab? { NotchTab(title: "Mirror", symbol: "web.camera", style: .button) }
 
@@ -17,7 +16,7 @@ extension MirrorCamera: NotchModule {
         switch placement {
         case .page:
             MirrorPage(camera: self)
-        case .expanded, .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail, .headline:
+        case .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail, .headline:
             EmptyView()
         }
     }

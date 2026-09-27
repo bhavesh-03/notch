@@ -37,6 +37,7 @@ final class NotchViewModel {
     let shelf = ShelfStore()
     let nowPlaying = NowPlayingMonitor()
     let mirror = MirrorCamera()
+    let stats = SystemStatsMonitor()
     let launchAtLogin = LaunchAtLogin()
     let settings: NotchSettings
 
@@ -85,7 +86,12 @@ final class NotchViewModel {
         select(tab: target)
     }
     /// Every module, whether or not the user shows it.
-    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, mirror] }
+    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, mirror, stats] }
+
+    /// Home's widgets in the user's order and sizes, minus those whose feature is hidden.
+    var homeWidgets: [HomeWidget] {
+        settings.homeLayout.widgets.filter { settings.isVisible($0.kind.feature) }
+    }
 
     /// The modules the user shows, in the order they chose. Everything in the notch reads this, so
     /// a hidden feature disappears from the ears, Home, the tabs and activities alike.

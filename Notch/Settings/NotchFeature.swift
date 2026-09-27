@@ -10,6 +10,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
     case files
     case nowPlaying
     case mirror
+    case systemStats
 
     var id: String { rawValue }
 
@@ -21,6 +22,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .files: "Files"
         case .nowPlaying: "Now Playing"
         case .mirror: "Mirror"
+        case .systemStats: "System Stats"
         }
     }
 
@@ -32,6 +34,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .files: "tray.full.fill"
         case .nowPlaying: "play.fill"
         case .mirror: "web.camera"
+        case .systemStats: "gauge.with.dots.needle.33percent"
         }
     }
 
@@ -43,6 +46,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .files: "A shelf for files dropped onto the notch"
         case .nowPlaying: "What's playing in any app, with controls"
         case .mirror: "A live camera view, from a button beside the camera"
+        case .systemStats: "CPU, GPU, memory and temperature widgets for Home"
         }
     }
 }

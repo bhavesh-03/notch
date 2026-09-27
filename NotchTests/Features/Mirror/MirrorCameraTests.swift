@@ -18,7 +18,6 @@ struct MirrorCameraTests {
         let mirror = MirrorCamera()
         #expect(mirror.tab?.style == .button)
         #expect(mirror.wantsTallPage)
-        #expect(!mirror.hasExpandedSection)
         #expect(mirror.earPriority == nil)
     }
 

@@ -12,8 +12,6 @@ extension CalendarMonitor: NotchModule {
     @ViewBuilder
     func content(for placement: NotchPlacement) -> some View {
         switch placement {
-        case .expanded:
-            CalendarSection(calendar: self)
         case .headline, .page:
             EmptyView()
         case .leadingEar, .activityLeading:
@@ -40,7 +38,7 @@ extension CalendarMonitor: NotchModule {
 }
 
 /// "8 min" counting down each minute, then "Now".
-private struct StartsIn: View {
+struct StartsIn: View {
     let event: CalendarEvent
 
     var body: some View {
@@ -52,7 +50,7 @@ private struct StartsIn: View {
     }
 }
 
-private struct CalendarSection: View {
+struct CalendarSection: View {
     let calendar: CalendarMonitor
 
     var body: some View {
@@ -95,7 +93,7 @@ private struct CalendarSection: View {
                 }
             }
         }
-        .frame(width: 110)
+        .frame(maxWidth: .infinity)
     }
 
     private static let privacySettingsURL = URL(
@@ -103,7 +101,7 @@ private struct CalendarSection: View {
     )!
 }
 
-private struct EventSummary: View {
+struct EventSummary: View {
     let event: CalendarEvent
 
     var body: some View {

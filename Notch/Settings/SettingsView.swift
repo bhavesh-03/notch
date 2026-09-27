@@ -78,7 +78,7 @@ struct FeaturesSettings: View {
                 }
                 .onMove { settings.moveFeatures(fromOffsets: $0, toOffset: $1) }
             } footer: {
-                Text("Drag to reorder. The order sets Home's columns and the tabs above them.")
+                Text("Drag to reorder the tabs above Home. Turning a feature off also removes its Home widgets.")
                     .foregroundStyle(.secondary)
             }
             ResetSection { settings.resetFeatures() }

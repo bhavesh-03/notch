@@ -33,8 +33,6 @@ extension TimerController: NotchModule {
             case .pill:
                 Countdown(timer: self)
                     .font(.caption)
-            case .expanded:
-                TimerSection(timer: self)
             case .page:
                 TimerPage(timer: self)
             case .headline:
@@ -56,7 +54,7 @@ extension TimerController: NotchModule {
     }
 }
 
-private struct TimerSection: View {
+struct TimerSection: View {
     let timer: TimerController
     @Environment(\.openNotchPage) private var openPage
 

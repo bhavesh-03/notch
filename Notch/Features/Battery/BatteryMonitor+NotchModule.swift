@@ -25,8 +25,6 @@ extension BatteryMonitor: NotchModule {
                 case .trailingEar:
                     BatteryPercentage(status: status)
                         .font(.caption2)
-                case .expanded:
-                    BatterySection(status: status)
                 case .headline, .page:
                     EmptyView()
                 case .activityLeading:
@@ -41,13 +39,11 @@ extension BatteryMonitor: NotchModule {
                 }
             }
             .animation(.snappy, value: status)
-        } else if placement == .expanded {
-            Text("No battery")
         }
     }
 }
 
-private struct BatteryIcon: View {
+struct BatteryIcon: View {
     let status: BatteryStatus
 
     var body: some View {
@@ -56,7 +52,7 @@ private struct BatteryIcon: View {
     }
 }
 
-private struct BatteryPercentage: View {
+struct BatteryPercentage: View {
     let status: BatteryStatus
 
     var body: some View {
@@ -66,7 +62,7 @@ private struct BatteryPercentage: View {
     }
 }
 
-private struct BatterySection: View {
+struct BatterySection: View {
     let status: BatteryStatus
 
     var body: some View {
@@ -75,16 +71,18 @@ private struct BatterySection: View {
                 .font(.title)
             BatteryPercentage(status: status)
                 .font(.title3.bold())
-            Text(statusText)
+            Text(status.stateText)
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.6))
         }
     }
+}
 
-    private var statusText: String {
-        if status.isCharging {
+extension BatteryStatus {
+    var stateText: String {
+        if isCharging {
             "Charging"
-        } else if status.isPluggedIn {
+        } else if isPluggedIn {
             "Plugged in"
         } else {
             "On battery"

@@ -9,8 +9,6 @@ extension NowPlayingMonitor: NotchModule {
         info?.isPlaying == true && !isSourceInFront ? 3 : nil
     }
 
-    /// The player lives in the headline row instead of a column.
-    var hasExpandedSection: Bool { false }
 
     /// Shown whenever there's something to control, playing or paused.
     var hasHeadline: Bool { info != nil }
@@ -43,7 +41,7 @@ extension NowPlayingMonitor: NotchModule {
                     .font(.caption)
                     .lineLimit(1)
                     .padding(.horizontal, 16)
-            case .expanded, .page:
+            case .page:
                 EmptyView()
             }
         }

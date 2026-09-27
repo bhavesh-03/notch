@@ -12,7 +12,6 @@ enum NotchPlacement {
     case leadingEar
     case trailingEar
     case pill
-    case expanded
     /// A full-width row above the module columns in the expanded notch.
     case headline
     /// The module's full-width page, opened from the tab bar or from the module's own UI.
@@ -33,14 +32,10 @@ protocol NotchModule: AnyObject {
     @ViewBuilder
     func content(for placement: NotchPlacement) -> Content
 
-    /// Whether the module gets a column in the expanded notch.
-    var hasExpandedSection: Bool { get }
-
     /// Whether the module wants the full-width headline row right now.
     var hasHeadline: Bool { get }
 
-    /// A module with a tab gets its own page in the expanded notch (its `.expanded` content)
-    /// instead of a column on Home.
+    /// A module with a tab gets its own page in the expanded notch (its `.page` content).
     var tab: NotchTab? { get }
 
     /// Whether files dragged onto the notch should go to this module's tab.
@@ -67,9 +62,6 @@ struct NotchTab: Equatable {
 }
 
 extension NotchModule {
-    /// Most modules do; one that only lives in the ears overrides this.
-    var hasExpandedSection: Bool { true }
-
     /// Only a module with something big to show (like a media player) claims the headline.
     var hasHeadline: Bool { false }
 

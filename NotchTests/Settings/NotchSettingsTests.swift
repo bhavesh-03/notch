@@ -33,7 +33,7 @@ struct NotchSettingsTests {
         let settings = settings()
         // Drag Now Playing (index 4) to the top.
         settings.moveFeatures(fromOffsets: [4], toOffset: 0)
-        #expect(settings.featureOrder == [.nowPlaying, .battery, .timer, .calendar, .files, .mirror])
+        #expect(settings.featureOrder == [.nowPlaying, .battery, .timer, .calendar, .files, .mirror, .systemStats])
     }
 
     @Test func choicesSurviveARelaunch() {
@@ -59,7 +59,7 @@ struct NotchSettingsTests {
     @Test func aSavedOrderIsRepaired() {
         // From an older version (no Mirror yet), with a duplicate and a name this version doesn't know.
         defaults.set(["timer", "battery", "timer", "weather"], forKey: "settings.featureOrder")
-        #expect(settings().featureOrder == [.timer, .battery, .calendar, .files, .nowPlaying, .mirror])
+        #expect(settings().featureOrder == [.timer, .battery, .calendar, .files, .nowPlaying, .mirror, .systemStats])
     }
 
     @Test func changesAreReported() {
@@ -169,7 +169,7 @@ struct FeatureVisibilityTests {
         let (model, settings) = model()
         settings.moveFeatures(fromOffsets: [2], toOffset: 0)   // Calendar first
         #expect(model.modules.map(\.feature).first == .calendar)
-        #expect(model.modules.filter(\.hasExpandedSection).map(\.feature) == [.calendar, .battery, .timer])
+        #expect(model.modules.map(\.feature).prefix(3) == [.calendar, .battery, .timer])
     }
 
     @Test func aHiddenFeatureLeavesTheNotch() {

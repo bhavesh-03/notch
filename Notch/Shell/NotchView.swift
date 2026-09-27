@@ -193,9 +193,10 @@ struct NotchView: View {
 
     private var homePage: some View {
         VStack(spacing: 0) {
+            // Clear of the camera band and the tab bar in it.
+            Color.clear.frame(height: geometry.notchRect.height)
             if let headliner = viewModel.modules.headliner {
-                // Clear of the camera band, then the full-width row, then the usual columns.
-                Color.clear.frame(height: geometry.notchRect.height)
+                // The full-width player row, then the widgets.
                 AnyView(headliner.content(for: .headline))
                     .frame(height: NotchGeometry.headlineHeight - 8)
                     .padding(.horizontal, 24)
@@ -204,28 +205,17 @@ struct NotchView: View {
                     .overlay(.white.opacity(0.15))
                     .padding(.horizontal, 24)
             }
-            if viewModel.modules.contains(where: \.hasExpandedSection) || viewModel.showsHeadline {
-                moduleColumns
-                    .frame(maxHeight: .infinity)
-            } else {
-                Text("Nothing to show on Home. Right-click for Settings.")
+            if viewModel.homeWidgets.isEmpty {
+                Text("Nothing on Home. Right-click for Settings.")
                     .font(.callout)
                     .foregroundStyle(.white.opacity(0.5))
                     .frame(maxHeight: .infinity)
-            }
-        }
-    }
-
-    private var moduleColumns: some View {
-        HStack(spacing: 20) {
-            let sections = viewModel.modules.filter(\.hasExpandedSection)
-            ForEach(sections.indices, id: \.self) { index in
-                if index > 0 {
-                    Divider()
-                        .overlay(.white.opacity(0.3))
-                        .frame(height: 60)
-                }
-                AnyView(sections[index].content(for: .expanded))
+            } else {
+                HomeGrid(viewModel: viewModel)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 6)
+                    .padding(.bottom, 10)
+                    .frame(maxHeight: .infinity)
             }
         }
     }
