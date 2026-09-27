@@ -31,6 +31,22 @@ final class NotchSettings {
         didSet { save(showsEars, Keys.showsEars); onGeometryChanged?() }
     }
 
+    /// How long the pointer rests on the notch before it opens, in seconds (0 = instantly).
+    var hoverDelay: Double {
+        didSet {
+            let clamped = hoverDelay.clamped(to: Self.hoverDelayRange)
+            if hoverDelay != clamped { hoverDelay = clamped; return }
+            save(hoverDelay, Keys.hoverDelay)
+        }
+    }
+    var animationSpeed: AnimationSpeed {
+        didSet { save(animationSpeed.rawValue, Keys.animationSpeed) }
+    }
+    /// Features whose pop-up the user turned off. Stored as the exceptions, so a feature that gains
+    /// a pop-up in a later version starts with it on.
+    private(set) var mutedPopUps: Set<NotchFeature>
+
+    static let hoverDelayRange: ClosedRange<Double> = 0...1
     static let defaultCornerRadius: Double = 24
     static let cornerRadiusRange: ClosedRange<Double> = 12...32
 
@@ -51,6 +67,9 @@ final class NotchSettings {
         cornerRadius = (defaults.object(forKey: Keys.cornerRadius) as? Double)?.clamped(to: Self.cornerRadiusRange) ?? Self.defaultCornerRadius
         accent = defaults.string(forKey: Keys.accent).flatMap(NotchAccent.init(rawValue:)) ?? .orange
         showsEars = defaults.object(forKey: Keys.showsEars) as? Bool ?? true
+        hoverDelay = (defaults.object(forKey: Keys.hoverDelay) as? Double)?.clamped(to: Self.hoverDelayRange) ?? 0
+        animationSpeed = defaults.string(forKey: Keys.animationSpeed).flatMap(AnimationSpeed.init(rawValue:)) ?? .standard
+        mutedPopUps = Set(Self.features(forKey: Keys.mutedPopUps, in: defaults))
     }
 
     /// Settings kept in a throwaway domain, for tests and previews, so they never read or change the
@@ -111,6 +130,28 @@ final class NotchSettings {
         showsEars = true
     }
 
+    // MARK: - Behavior
+
+    func showsPopUp(for feature: NotchFeature) -> Bool {
+        !mutedPopUps.contains(feature)
+    }
+
+    func setShowsPopUp(for feature: NotchFeature, _ shows: Bool) {
+        if shows {
+            mutedPopUps.remove(feature)
+        } else {
+            mutedPopUps.insert(feature)
+        }
+        save(mutedPopUps.map(\.rawValue).sorted(), Keys.mutedPopUps)
+    }
+
+    func resetBehavior() {
+        hoverDelay = 0
+        animationSpeed = .standard
+        mutedPopUps = []
+        save([String](), Keys.mutedPopUps)
+    }
+
     // MARK: - Storage
 
     private enum Keys {
@@ -120,6 +161,9 @@ final class NotchSettings {
         static let cornerRadius = "settings.cornerRadius"
         static let accent = "settings.accent"
         static let showsEars = "settings.showsEars"
+        static let hoverDelay = "settings.hoverDelaySeconds"
+        static let animationSpeed = "settings.animationSpeed"
+        static let mutedPopUps = "settings.mutedPopUps"
     }
 
     private func save(_ value: Any, _ key: String) {

@@ -156,12 +156,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let activeRect = viewModel.geometry.hoverTarget(isExpanded: viewModel.isExpanded, hasHeadline: hoverIsTall, isDraggingFile: isDraggingFile)
         
         if activeRect.contains(mouse) {
-            viewModel.expand()
+            viewModel.pointerEntered(isDraggingFile: isDraggingFile)
             if isDraggingFile {
                 viewModel.showDropTarget()
             }
         } else {
-            viewModel.scheduleCollapse()
+            viewModel.pointerLeft()
         }
         
     }

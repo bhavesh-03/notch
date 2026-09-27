@@ -27,6 +27,7 @@ final class NotchViewModel {
 
     @ObservationIgnored var onExpandedChange: ((Bool) -> Void)?
     private var collapseTask: Task<Void, Never>?
+    @ObservationIgnored private var expandTask: Task<Void, Never>?
     private var activityTask: Task<Void, Never>?
     @ObservationIgnored private var isHeldOpen = false
     var geometry: NotchGeometry
@@ -107,11 +108,43 @@ final class NotchViewModel {
 
     /// Springs normally; a short, bounce-free ease when the user has asked for less motion.
     var activityAnimation: Animation {
-        NotchMotion.activityOpen(reduceMotion: reduceMotion())
+        NotchMotion.activityOpen(reduceMotion: reduceMotion(), speed: settings.animationSpeed.multiplier)
     }
 
     var activityCloseAnimation: Animation {
-        NotchMotion.activityClose(reduceMotion: reduceMotion())
+        NotchMotion.activityClose(reduceMotion: reduceMotion(), speed: settings.animationSpeed.multiplier)
+    }
+
+    /// The pointer is over the notch. Opens it after the user's hover delay; a file drag opens it
+    /// right away, since the user is already on their way to drop.
+    func pointerEntered(isDraggingFile: Bool = false) {
+        collapseTask?.cancel()
+        collapseTask = nil
+
+        let delay = settings.hoverDelay
+        guard !isExpanded, !isDraggingFile, delay > 0 else {
+            cancelPendingExpand()
+            expand()
+            return
+        }
+        guard expandTask == nil else { return }   // already counting down
+        expandTask = Task {
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled else { return }
+            expandTask = nil
+            expand()
+        }
+    }
+
+    /// The pointer left the notch: a pending open is called off, and an open notch closes soon.
+    func pointerLeft() {
+        cancelPendingExpand()
+        scheduleCollapse()
+    }
+
+    private func cancelPendingExpand() {
+        expandTask?.cancel()
+        expandTask = nil
     }
 
     func expand() {
@@ -121,7 +154,7 @@ final class NotchViewModel {
         activityTask = nil
 
         guard !isExpanded else { return }
-        withAnimation(.snappy) {
+        withAnimation(NotchMotion.expandCollapse(speed: settings.animationSpeed.multiplier)) {
             presentation = .expanded
         }
     }
@@ -144,7 +177,7 @@ final class NotchViewModel {
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
 
-            withAnimation(.snappy) {
+            withAnimation(NotchMotion.expandCollapse(speed: settings.animationSpeed.multiplier)) {
                 presentation = .collapsed
                 selectedTab = nil
                 keepsTallHover = false
@@ -154,7 +187,7 @@ final class NotchViewModel {
     }
 
     func showActivity(from module: any NotchModule, for duration: Duration = .seconds(2.5)) {
-        guard !isExpanded, settings.isVisible(module.feature) else { return }
+        guard !isExpanded, settings.isVisible(module.feature), settings.showsPopUp(for: module.feature) else { return }
 
         activityTask?.cancel()
         withAnimation(activityAnimation) {

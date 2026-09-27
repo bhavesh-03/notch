@@ -8,6 +8,7 @@ struct NotchView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var geometry: NotchGeometry { viewModel.geometry }
+    private var motionSpeed: Double { viewModel.settings.animationSpeed.multiplier }
 
     private var size: CGSize {
         switch viewModel.presentation {
@@ -40,20 +41,20 @@ struct NotchView: View {
                 switch viewModel.presentation {
                 case .collapsed:
                     collapsedContent
-                        .transition(NotchMotion.content(reduceMotion: reduceMotion))
+                        .transition(NotchMotion.content(reduceMotion: reduceMotion, speed: motionSpeed))
                 case .expanded:
                     expandedContent
                 case .activity(let module):
                     activityContent(for: module)
-                        .transition(NotchMotion.content(reduceMotion: reduceMotion))
+                        .transition(NotchMotion.content(reduceMotion: reduceMotion, speed: motionSpeed))
                 }
             }
             .foregroundStyle(.white)
             .clipShape(notchShape)
             // Below the clip on purpose: `.animation` only animates what's above it. Above the clip,
             // the clip would jump to the new size while the shape animated inside it, hiding a shrink.
-            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion), value: viewModel.isTall)
-            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion), value: viewModel.settings.cornerRadius)
+            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.isTall)
+            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.settings.cornerRadius)
             .environment(\.notchAccent, viewModel.settings.accent.color)
             .contextMenu { appMenu }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -85,7 +86,7 @@ struct NotchView: View {
                 ear(.pill)
             }
         }
-        .animation(NotchMotion.earHandover(reduceMotion: reduceMotion), value: earOwnerID)
+        .animation(NotchMotion.earHandover(reduceMotion: reduceMotion, speed: motionSpeed), value: earOwnerID)
     }
 
     private var expandedContent: some View {
@@ -98,13 +99,13 @@ struct NotchView: View {
                 }
             }
             .id(viewModel.selectedTab)
-            .transition(NotchMotion.earContent(reduceMotion: reduceMotion))
+            .transition(NotchMotion.earContent(reduceMotion: reduceMotion, speed: motionSpeed))
 
             if !viewModel.tabModules.isEmpty {
                 tabBar
             }
         }
-        .animation(NotchMotion.earHandover(reduceMotion: reduceMotion), value: viewModel.selectedTab)
+        .animation(NotchMotion.earHandover(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.selectedTab)
         .environment(\.openNotchPage, OpenNotchPageAction { [viewModel] module in viewModel.select(tab: module) })
         .transition(.opacity)
     }
@@ -197,7 +198,7 @@ struct NotchView: View {
                 AnyView(headliner.content(for: .headline))
                     .frame(height: NotchGeometry.headlineHeight - 8)
                     .padding(.horizontal, 24)
-                    .transition(NotchMotion.earContent(reduceMotion: reduceMotion))
+                    .transition(NotchMotion.earContent(reduceMotion: reduceMotion, speed: motionSpeed))
                 Divider()
                     .overlay(.white.opacity(0.15))
                     .padding(.horizontal, 24)
@@ -277,7 +278,7 @@ struct NotchView: View {
                 // A new identity per owner makes a handover a transition, not an in-place swap.
                 AnyView(earModule.content(for: placement))
                     .id(earOwnerID)
-                    .transition(NotchMotion.earContent(reduceMotion: reduceMotion))
+                    .transition(NotchMotion.earContent(reduceMotion: reduceMotion, speed: motionSpeed))
             }
         }
     }

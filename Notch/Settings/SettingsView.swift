@@ -1,18 +1,61 @@
 import SwiftUI
 
-/// The settings window's content. Each part of the customization gets its own tab.
-struct SettingsView: View {
-    let settings: NotchSettings
+/// The settings window's tabs. Each is a grouped form, the System Settings layout: labels on the
+/// left, controls on the right, explanations under each section. The window shows them as toolbar
+/// tabs (see `SettingsWindowController`).
+enum SettingsTab: CaseIterable {
+    case features, look, behavior
+
+    var title: String {
+        switch self {
+        case .features: "Features"
+        case .look: "Look"
+        case .behavior: "Behavior"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .features: "square.grid.2x2"
+        case .look: "paintbrush"
+        case .behavior: "cursorarrow.motionlines"
+        }
+    }
+
+    /// Each tab's size. The window resizes to it when the tab is selected, like System Settings.
+    var size: CGSize {
+        switch self {
+        case .features: CGSize(width: 500, height: 456)
+        case .look: CGSize(width: 500, height: 440)
+        case .behavior: CGSize(width: 500, height: 492)
+        }
+    }
+
+    @MainActor @ViewBuilder
+    func view(settings: NotchSettings) -> some View {
+        Group {
+            switch self {
+            case .features: FeaturesSettings(settings: settings)
+            case .look: LookSettings(settings: settings)
+            case .behavior: BehaviorSettings(settings: settings)
+            }
+        }
+        .formStyle(.grouped)
+        .frame(width: size.width, height: size.height)
+    }
+}
+
+/// A Reset button at the bottom right of a tab, in the same place on every tab.
+private struct ResetSection: View {
+    let action: () -> Void
 
     var body: some View {
-        TabView {
-            FeaturesSettings(settings: settings)
-                .tabItem { Label("Features", systemImage: "square.grid.2x2") }
-            LookSettings(settings: settings)
-                .tabItem { Label("Look", systemImage: "paintbrush") }
+        Section {} footer: {
+            HStack {
+                Spacer()
+                Button("Reset", action: action)
+            }
         }
-        .frame(width: 460)
-        .padding(20)
     }
 }
 
@@ -21,8 +64,8 @@ struct FeaturesSettings: View {
     let settings: NotchSettings
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            List {
+        Form {
+            Section {
                 ForEach(settings.featureOrder) { feature in
                     FeatureRow(feature: feature, isOn: Binding(
                         get: { settings.isVisible(feature) },
@@ -30,17 +73,11 @@ struct FeaturesSettings: View {
                     ))
                 }
                 .onMove { settings.moveFeatures(fromOffsets: $0, toOffset: $1) }
-            }
-            .listStyle(.bordered(alternatesRowBackgrounds: true))
-            .frame(height: 6 * 50)
-
-            HStack(alignment: .firstTextBaseline) {
+            } footer: {
                 Text("Drag to reorder. The order sets Home's columns and the tabs above them.")
-                    .font(.callout)
                     .foregroundStyle(.secondary)
-                Spacer()
-                Button("Reset") { settings.resetFeatures() }
             }
+            ResetSection { settings.resetFeatures() }
         }
     }
 }
@@ -50,22 +87,20 @@ struct LookSettings: View {
     @Bindable var settings: NotchSettings
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            NotchLookPreview(settings: settings)
+        Form {
+            Section {
+                NotchLookPreview(settings: settings)
+            }
 
-            Form {
+            Section {
                 Picker("Width", selection: $settings.width) {
                     ForEach(NotchWidth.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
 
                 LabeledContent("Corners") {
-                    HStack {
-                        Slider(value: $settings.cornerRadius, in: NotchSettings.cornerRadiusRange, step: 1)
-                        Text("\(Int(settings.cornerRadius)) pt")
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                            .frame(width: 42, alignment: .trailing)
+                    SteppedSlider(value: $settings.cornerRadius, in: NotchSettings.cornerRadiusRange, step: 1) {
+                        "\(Int($0)) pt"
                     }
                 }
 
@@ -78,19 +113,94 @@ struct LookSettings: View {
                         }
                     }
                 }
+            }
 
+            Section {
                 Toggle("Show ears when collapsed", isOn: $settings.showsEars)
-                Text("The ears are the small areas beside the camera that show the battery, a running timer or what's playing. Pop-ups still appear when they're off.")
-                    .font(.caption)
+            } footer: {
+                Text("The ears beside the camera show the battery, a running timer or what's playing. Pop-ups still appear when they're off.")
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            HStack {
-                Spacer()
-                Button("Reset") { settings.resetLook() }
-            }
+            ResetSection { settings.resetLook() }
         }
+    }
+}
+
+/// Hover delay, which pop-ups appear, and how fast the notch moves.
+struct BehaviorSettings: View {
+    @Bindable var settings: NotchSettings
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Open on hover") {
+                    SteppedSlider(value: $settings.hoverDelay, in: NotchSettings.hoverDelayRange, step: 0.05) {
+                        $0 == 0 ? "Instantly" : String(format: "%.2g s", $0)
+                    }
+                }
+            } footer: {
+                Text("A short delay keeps the notch from opening when the pointer just passes by. Dragging a file always opens it right away.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Picker("Animation speed", selection: $settings.animationSpeed) {
+                    ForEach(AnimationSpeed.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+            } footer: {
+                Text("With Reduce Motion on in System Settings, the notch fades instead of springing.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                ForEach(NotchFeature.withPopUps) { feature in
+                    Toggle(feature.popUpTitle ?? feature.title, isOn: Binding(
+                        get: { settings.showsPopUp(for: feature) },
+                        set: { settings.setShowsPopUp(for: feature, $0) }
+                    ))
+                    .disabled(!settings.isVisible(feature))
+                }
+            } header: {
+                Text("Pop-ups")
+            } footer: {
+                Text("Shown briefly while the notch is closed. Hidden features can't show theirs.")
+                    .foregroundStyle(.secondary)
+            }
+
+            ResetSection { settings.resetBehavior() }
+        }
+    }
+}
+
+/// A slider that snaps to `step` without drawing a tick mark for every step (which `Slider`'s own
+/// `step:` does), with its value shown beside it.
+private struct SteppedSlider: View {
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let step: Double
+    let label: (Double) -> String
+
+    init(value: Binding<Double>, in range: ClosedRange<Double>, step: Double, label: @escaping (Double) -> String) {
+        _value = value
+        self.range = range
+        self.step = step
+        self.label = label
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Slider(value: Binding(
+                get: { value },
+                set: { value = (($0 / step).rounded() * step).clamped(to: range) }
+            ), in: range)
+            Text(label(value))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .frame(width: 62, alignment: .trailing)
+        }
+        .frame(width: 230)
     }
 }
 
@@ -123,8 +233,7 @@ private struct NotchLookPreview: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: NotchGeometry.expandedHeight * scale)
-        .padding(.vertical, 12)
-        .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 10))
+        .padding(.vertical, 8)
         .animation(.spring(duration: 0.5, bounce: 0.3), value: settings.width)
         .animation(.spring(duration: 0.5, bounce: 0.3), value: settings.cornerRadius)
     }
@@ -181,6 +290,10 @@ private struct FeatureRow: View {
     }
 }
 
-#Preview {
-    SettingsView(settings: .ephemeral())
+#Preview("Look") {
+    SettingsTab.look.view(settings: .ephemeral())
+}
+
+#Preview("Behavior") {
+    SettingsTab.behavior.view(settings: .ephemeral())
 }

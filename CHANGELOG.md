@@ -9,8 +9,9 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 - The app's version and build number are shown at the top of the right-click menu.
 - **Customizable timer:** tap the timer on Home to open a full-width page with a minute ruler (up to 2 hours) that follows click-drag, flicks and trackpad scrolling, snaps to whole minutes, and makes the tick under the pointer glow. Click and hold for half a second to zoom in and pick 15-second steps. Times of an hour or more show hours (1:30:00) everywhere. While running, the page shows a large countdown with pause and cancel.
 - **Mirror:** a camera button (right of the camera housing) opens a live, mirrored camera view in the notch. The camera runs only while the mirror is open; nothing is recorded or saved.
-- **Settings window** (right-click the expanded notch → Settings…). **Features:** show or hide each feature and drag to reorder them; hidden features leave the ears, Home, the tabs and pop-ups, and Now Playing stops its helper process while hidden.
+- **Settings window** (right-click the expanded notch → Settings…), laid out like System Settings with toolbar tabs. **Features:** show or hide each feature and drag to reorder them; hidden features leave the ears, Home, the tabs and pop-ups, and Now Playing stops its helper process while hidden.
 - **Look settings:** notch width (Compact, Standard, Wide), corner roundness, an accent color for the timer and playback progress, and whether the collapsed notch shows ears. A live preview follows your changes.
+- **Behavior settings:** a hover delay slider (0–1 s) before the notch opens (file drags still open it instantly), an on/off switch for each pop-up (charger, timer finished, meeting starting, new track), and an animation speed for the notch's motion.
 
 ### Changed
 - Page height changes (switching tabs, the player row appearing or leaving) use a slower, softer spring.
