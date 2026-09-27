@@ -12,6 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private var panel: NotchPanel?
     private var viewModel: NotchViewModel?
+    private let settings = NotchSettings()
+    private lazy var settingsWindow = SettingsWindowController(settings: settings)
     private var monitors: [Any] = []
     private var screenChangeTask: Task<Void, Never>?
     private var menuTrackingTasks: [Task<Void, Never>] = []
@@ -22,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         guard let geometry = Self.currentGeometry() else { return }
         
-        let viewModel = NotchViewModel(geometry: geometry)
+        let viewModel = NotchViewModel(geometry: geometry, settings: settings)
         self.viewModel = viewModel
         let panel = NotchPanel(contentRect: geometry.panelRect)
         panel.contentView = NSHostingView(rootView: NotchView(viewModel: viewModel))
@@ -53,7 +55,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             viewModel.showActivity(from: viewModel.battery)
         }
 
-        viewModel.nowPlaying.start()
+        viewModel.onOpenSettings = { [weak self] in
+            self?.settingsWindow.show()
+        }
+        settings.onFeaturesChanged = { [weak self] in
+            self?.applyFeatureSettings()
+        }
+        applyFeatureSettings()
         viewModel.nowPlaying.onTrackChanged = { [weak viewModel] _ in
             guard let viewModel else { return }
             viewModel.showActivity(from: viewModel.nowPlaying)
@@ -103,6 +111,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
     }
     
+    /// Starts or stops the parts of hidden features that do work in the background.
+    private func applyFeatureSettings() {
+        guard let viewModel else { return }
+        if settings.isVisible(.nowPlaying) {
+            viewModel.nowPlaying.start()   // no-op when already running
+        } else {
+            viewModel.nowPlaying.stop()    // ends the helper process
+        }
+    }
+
     private func handleMouseEvent(_ event: NSEvent) {
         switch event.type {
         case .leftMouseDown:
@@ -118,6 +136,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// went down and holds file URLs or file promises (e.g. a screenshot thumbnail).
     /// Window drags and text selection don't qualify.
     private func isDraggingFile() -> Bool {
+        // With no module taking files (the Files feature hidden), a file drag is just a drag.
+        guard viewModel?.modules.contains(where: \.acceptsFileDrops) == true else { return false }
         let pasteboard = NSPasteboard(name: .drag)
         guard pasteboard.changeCount != dragPasteboardChangeCount, let types = pasteboard.types else { return false }
         let promiseTypes = NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) }

@@ -2,6 +2,8 @@ import AVFoundation
 import SwiftUI
 
 extension MirrorCamera: NotchModule {
+    var feature: NotchFeature { .mirror }
+
     var earPriority: Int? { nil }
 
     var hasExpandedSection: Bool { false }

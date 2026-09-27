@@ -1,6 +1,8 @@
 import SwiftUI
 
 extension CalendarMonitor: NotchModule {
+    var feature: NotchFeature { .calendar }
+
     /// Above the battery (0), below an active timer (10), and only while the event is imminent.
     var earPriority: Int? {
         guard let nextEvent, nextEvent.isImminent(at: evaluatedAt) else { return nil }

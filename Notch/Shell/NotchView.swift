@@ -197,8 +197,15 @@ struct NotchView: View {
                     .overlay(.white.opacity(0.15))
                     .padding(.horizontal, 24)
             }
-            moduleColumns
-                .frame(maxHeight: .infinity)
+            if viewModel.modules.contains(where: \.hasExpandedSection) || viewModel.showsHeadline {
+                moduleColumns
+                    .frame(maxHeight: .infinity)
+            } else {
+                Text("Nothing to show on Home. Right-click for Settings.")
+                    .font(.callout)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .frame(maxHeight: .infinity)
+            }
         }
     }
 
@@ -235,6 +242,9 @@ struct NotchView: View {
             Text(error)
         }
         Divider()
+        Button("Settings…") {
+            viewModel.onOpenSettings?()
+        }
         Button("Quit Notch") {
             NSApplication.shared.terminate(nil)
         }

@@ -37,6 +37,10 @@ final class NotchViewModel {
     let nowPlaying = NowPlayingMonitor()
     let mirror = MirrorCamera()
     let launchAtLogin = LaunchAtLogin()
+    let settings: NotchSettings
+
+    /// Asks the app to show the settings window (the view can't reach the app delegate itself).
+    @ObservationIgnored var onOpenSettings: (() -> Void)?
     var hasHeadline: Bool { modules.headliner != nil }
 
     /// The module whose tab is open, or nil for Home.
@@ -79,15 +83,25 @@ final class NotchViewModel {
         guard let target = tabModules.first(where: { $0.acceptsFileDrops }) else { return }
         select(tab: target)
     }
-    var modules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, mirror] }
+    /// Every module, whether or not the user shows it.
+    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, mirror] }
+
+    /// The modules the user shows, in the order they chose. Everything in the notch reads this, so
+    /// a hidden feature disappears from the ears, Home, the tabs and activities alike.
+    var modules: [any NotchModule] {
+        let all = allModules
+        return settings.visibleFeatures.compactMap { feature in all.first { $0.feature == feature } }
+    }
 
     @ObservationIgnored private let reduceMotion: () -> Bool
 
     init(
         geometry: NotchGeometry,
+        settings: NotchSettings = .ephemeral(),
         reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
     ) {
         self.geometry = geometry
+        self.settings = settings
         self.reduceMotion = reduceMotion
     }
 
@@ -140,7 +154,7 @@ final class NotchViewModel {
     }
 
     func showActivity(from module: any NotchModule, for duration: Duration = .seconds(2.5)) {
-        guard !isExpanded else { return }
+        guard !isExpanded, settings.isVisible(module.feature) else { return }
 
         activityTask?.cancel()
         withAnimation(activityAnimation) {

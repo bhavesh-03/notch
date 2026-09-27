@@ -7,6 +7,7 @@ struct NotchModuleTests {
     final class FakeModule: NotchModule {
         let name: String
         var earPriority: Int?
+        var feature: NotchFeature { .battery }
 
         init(_ name: String, priority: Int?) {
             self.name = name

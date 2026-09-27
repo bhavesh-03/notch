@@ -3,6 +3,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 extension ShelfStore: NotchModule {
+    var feature: NotchFeature { .files }
+
     var earPriority: Int? { nil }
 
     /// Lives in its own tab rather than a Home column.

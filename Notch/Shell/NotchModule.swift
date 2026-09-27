@@ -25,6 +25,9 @@ enum NotchPlacement {
 protocol NotchModule: AnyObject {
     associatedtype Content: View
 
+    /// Which user-facing feature this is, for showing, hiding and ordering it in Settings.
+    var feature: NotchFeature { get }
+
     var earPriority: Int? { get }
 
     @ViewBuilder

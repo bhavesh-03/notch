@@ -9,6 +9,8 @@
 import SwiftUI
 
 extension BatteryMonitor: NotchModule {
+    var feature: NotchFeature { .battery }
+
     var earPriority: Int? {
         status == nil ? nil : 0
     }

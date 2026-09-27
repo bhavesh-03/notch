@@ -9,6 +9,8 @@
 import SwiftUI
 
 extension TimerController: NotchModule {
+    var feature: NotchFeature { .timer }
+
     var earPriority: Int? {
         state.phase == .idle ? nil : 10
     }

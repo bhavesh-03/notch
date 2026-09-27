@@ -1,6 +1,8 @@
 import SwiftUI
 
 extension NowPlayingMonitor: NotchModule {
+    var feature: NotchFeature { .nowPlaying }
+
     /// Above the battery (0), below an imminent meeting (5) and a running timer (10), only while
     /// playing, and not while you're in the playing app (the ears would just repeat what's on screen).
     var earPriority: Int? {
