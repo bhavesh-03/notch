@@ -6,6 +6,8 @@ struct NotchView: View {
     let viewModel: NotchViewModel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Lets the glass pill find the selected tab.
+    @Namespace private var tabGlass
 
     private var geometry: NotchGeometry { viewModel.geometry }
     private var motionSpeed: Double { viewModel.settings.animationSpeed.multiplier }
@@ -34,8 +36,23 @@ struct NotchView: View {
         )
     }
 
+    /// Solid black over a hardware notch, so it blends into the camera housing. On a screen without
+    /// one there's nothing to hide, so the notch is smoked Liquid Glass: tinted dark enough that its
+    /// white content stays readable over any menu bar or wallpaper.
+    @ViewBuilder
+    private var notchSurface: some View {
+        switch geometry.kind {
+        case .hardware:
+            notchShape.fill(.black)
+        case .virtual:
+            notchShape
+                .fill(.clear)
+                .glassEffect(.regular.tint(.black.opacity(0.55)), in: notchShape)
+        }
+    }
+
     var body: some View {
-        notchShape.fill(.black)
+        notchSurface
             .frame(width: size.width, height: size.height)
             .overlay {
                 switch viewModel.presentation {
@@ -126,7 +143,7 @@ struct NotchView: View {
                 .font(.caption.weight(.medium))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
-                .background(.white.opacity(0.18), in: Capsule())
+                .glassControl(in: Capsule())
                 .fixedSize()
             OverflowNote(settings: viewModel.settings, columns: homeColumns)
                 .font(.caption2)
@@ -175,12 +192,33 @@ struct NotchView: View {
             }
             .padding(.trailing, 22)
         }
+        .background { tabPill }
         .buttonStyle(.plain)
         .frame(height: geometry.notchRect.height)
     }
 
     private func tabs(_ style: NotchTab.Style) -> [any NotchModule] {
         viewModel.tabModules.filter { $0.tab?.style == style }
+    }
+
+    /// Marks where the selected tab is; the glass pill behind the bar follows it.
+    @ViewBuilder
+    private func selectionPill(_ selected: Bool) -> some View {
+        if selected {
+            Color.clear.matchedGeometryEffect(id: "selected-tab", in: tabGlass)
+        }
+    }
+
+    /// One glass pill behind the whole bar that slides to the selected tab. Behind, not around: glass
+    /// drawn in a container sits above sibling views, which hid the tab's label.
+    @ViewBuilder
+    private var tabPill: some View {
+        if viewModel.selectedTabModule?.tab?.style != .page {
+            Capsule()
+                .fill(.clear)
+                .glassEffect(.regular, in: Capsule())
+                .matchedGeometryEffect(id: "selected-tab", in: tabGlass, isSource: false)
+        }
     }
 
     private func isSelected(_ module: (any NotchModule)?) -> Bool {
@@ -196,7 +234,7 @@ struct NotchView: View {
                 .font(.caption.weight(.medium))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
-                .background(selected ? .white.opacity(0.18) : .clear, in: Capsule())
+                .background { selectionPill(selected) }
                 .foregroundStyle(.white.opacity(selected ? 1 : 0.55))
                 .contentShape(Capsule())
         }
@@ -211,7 +249,7 @@ struct NotchView: View {
             Image(systemName: tab.symbol)
                 .font(.caption.weight(.medium))
                 .frame(width: 24, height: 22)
-                .background(selected ? .white.opacity(0.18) : .clear, in: Capsule())
+                .background { selectionPill(selected) }
                 .foregroundStyle(.white.opacity(selected ? 1 : 0.55))
                 .contentShape(Capsule())
         }

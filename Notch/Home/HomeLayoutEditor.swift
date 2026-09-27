@@ -45,10 +45,14 @@ struct HomeLayoutEditor<Tile: View>: View {
                 width: (proxy.size.width - spacing * CGFloat(columns - 1)) / CGFloat(columns),
                 height: (proxy.size.height - spacing * CGFloat(HomeLayout.rows - 1)) / CGFloat(HomeLayout.rows)
             )
-            ZStack(alignment: .topLeading) {
-                emptyCells(cell: cell, placed: arrangement.placed)
-                ForEach(arrangement.placed, id: \.widget.id) { placement in
-                    card(for: placement, cell: cell)
+            // One container, so cards blend as they pass each other while dragging. Its spacing is below
+            // the gap between cards, so they never merge at rest.
+            GlassEffectContainer(spacing: spacing / 2) {
+                ZStack(alignment: .topLeading) {
+                    emptyCells(cell: cell, placed: arrangement.placed)
+                    ForEach(arrangement.placed, id: \.widget.id) { placement in
+                        card(for: placement, cell: cell)
+                    }
                 }
             }
             .coordinateSpace(.named(Self.space))
@@ -96,8 +100,8 @@ struct HomeLayoutEditor<Tile: View>: View {
 
         return tile(placement.widget)
             .frame(width: size.width, height: size.height)
-            .background(.white.opacity(0.07), in: .rect(cornerRadius: cornerRadius, style: .continuous))
             .clipShape(.rect(cornerRadius: cornerRadius, style: .continuous))
+            .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(.white.opacity(isDragged ? 0.5 : 0.22), lineWidth: 1)
@@ -119,9 +123,9 @@ struct HomeLayoutEditor<Tile: View>: View {
         } label: {
             Image(systemName: "minus")
                 .font(.system(size: 9, weight: .heavy))
-                .foregroundStyle(.black)
+                .foregroundStyle(.white)
                 .frame(width: 18, height: 18)
-                .background(.white.opacity(0.85), in: Circle())
+                .glassControl(in: Circle())
         }
         .buttonStyle(.plain)
         .offset(x: -4, y: -4)
@@ -131,9 +135,9 @@ struct HomeLayoutEditor<Tile: View>: View {
     private func resizeHandle(_ kind: HomeWidgetKind, slot: CGSize, cell: CGSize) -> some View {
         Image(systemName: "arrow.up.left.and.arrow.down.right")
             .font(.system(size: 8, weight: .bold))
-            .foregroundStyle(.black)
+            .foregroundStyle(.white)
             .frame(width: 18, height: 18)
-            .background(.white.opacity(0.85), in: Circle())
+            .glassControl(in: Circle())
             .offset(x: 3, y: 3)
             .contentShape(Circle().inset(by: -6))
             .gesture(

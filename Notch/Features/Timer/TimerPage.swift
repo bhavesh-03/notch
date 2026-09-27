@@ -39,7 +39,7 @@ struct TimerPage: View {
                         .foregroundStyle(accent)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 9)
-                        .background(accent.opacity(0.2), in: Capsule())
+                        .glassControl(in: Capsule())
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -83,7 +83,11 @@ struct TimerPage: View {
                         .foregroundStyle(isCurrent ? .black : accent)
                         .padding(.horizontal, 9)
                         .padding(.vertical, 5)
-                        .background(isCurrent ? accent : accent.opacity(0.14), in: Capsule())
+                        .background {
+                            // The chosen length is solid accent; the others are glass.
+                            if isCurrent { Capsule().fill(accent) }
+                        }
+                        .glassControl(in: Capsule())
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -128,7 +132,7 @@ struct TimerPage: View {
                 .foregroundStyle(accent)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 46, height: 46)
-                .background(accent.opacity(0.2), in: Circle())
+                .glassControl(in: Circle())
                 .contentShape(Circle())
         }
     }

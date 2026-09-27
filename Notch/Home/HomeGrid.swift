@@ -15,6 +15,7 @@ struct HomeGrid: View {
                 width: (proxy.size.width - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns),
                 height: (proxy.size.height - Self.spacing * CGFloat(HomeLayout.rows - 1)) / CGFloat(HomeLayout.rows)
             )
+            GlassEffectContainer(spacing: Self.spacing / 2) {
             ZStack(alignment: .topLeading) {
                 ForEach(placed, id: \.widget.id) { placement in
                     WidgetCard {
@@ -31,13 +32,14 @@ struct HomeGrid: View {
                     .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
             }
+            }
         }
         .animation(.spring(duration: 0.5, bounce: 0.25), value: placed)
         .animation(.spring(duration: 0.5, bounce: 0.25), value: columns)
     }
 }
 
-/// The rounded tile every widget sits on.
+/// The glass tile every widget sits on.
 struct WidgetCard<Content: View>: View {
     @ViewBuilder let content: Content
 
@@ -45,9 +47,9 @@ struct WidgetCard<Content: View>: View {
         content
             .padding(8)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(.white.opacity(0.07), in: .rect(cornerRadius: 14, style: .continuous))
             // A widget never grows past its cell, whatever its content asks for.
             .clipShape(.rect(cornerRadius: 14, style: .continuous))
+            .glassEffect(.regular, in: .rect(cornerRadius: 14, style: .continuous))
     }
 }
 

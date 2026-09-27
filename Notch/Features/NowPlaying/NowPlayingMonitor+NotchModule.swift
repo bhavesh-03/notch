@@ -96,7 +96,7 @@ private struct PlayerRow: View {
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 10)
                     .frame(height: 28)
-                    .background(.white.opacity(0.15), in: Capsule())
+                    .glassControl(in: Capsule())
             }
             .help("\(info.appName) can be controlled here while it's the Mac's current player. Open it to play or pause.")
         } else {
@@ -115,7 +115,7 @@ private struct PlayerRow: View {
         } label: {
             Image(systemName: symbol)
                 .frame(width: 28, height: 28)
-                .background(.white.opacity(0.15), in: Circle())
+                .glassControl(in: Circle())
         }
     }
 }
@@ -124,6 +124,7 @@ private struct PlayerRow: View {
 private struct PlayerSwitcher: View {
     let monitor: NowPlayingMonitor
     let shown: NowPlayingInfo
+    @Namespace private var selection
 
     var body: some View {
         HStack(spacing: 4) {
@@ -135,7 +136,11 @@ private struct PlayerSwitcher: View {
                     SourceAppIcon(bundleIdentifier: player.appBundleIdentifier)
                         .frame(width: 20, height: 20)
                         .padding(4)
-                        .background(isShown ? .white.opacity(0.2) : .clear, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        .background {
+                            if isShown {
+                                Color.clear.matchedGeometryEffect(id: "shown-player", in: selection)
+                            }
+                        }
                         .opacity(isShown ? 1 : 0.5)
                         .overlay(alignment: .bottom) {
                             if player.isPlaying {
@@ -148,6 +153,14 @@ private struct PlayerSwitcher: View {
                 .help([player.appName, player.title].filter { !$0.isEmpty }.joined(separator: " · "))
             }
         }
+        .background {
+            // One glass square behind the icons that slides to whichever app is shown.
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(.clear)
+                .glassEffect(.regular, in: .rect(cornerRadius: 7, style: .continuous))
+                .matchedGeometryEffect(id: "shown-player", in: selection, isSource: false)
+        }
+        .animation(.snappy, value: shown.id)
         .padding(.leading, 4)
         .overlay(alignment: .leading) {
             Rectangle().fill(.white.opacity(0.15)).frame(width: 1, height: 24).offset(x: -6)

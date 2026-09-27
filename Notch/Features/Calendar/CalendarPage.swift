@@ -57,7 +57,7 @@ private struct MonthHeader: View {
                     .font(.caption.weight(.medium))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(.white.opacity(0.12), in: Capsule())
+                    .glassControl(in: Capsule())
                     .transition(.opacity.combined(with: .scale(scale: 0.8)))
             }
             arrow("chevron.left", months: -1)
@@ -81,7 +81,7 @@ private struct MonthHeader: View {
             Image(systemName: symbol)
                 .font(.system(size: 11, weight: .bold))
                 .frame(width: 22, height: 22)
-                .background(.white.opacity(0.12), in: Circle())
+                .glassControl(in: Circle())
         }
     }
 }

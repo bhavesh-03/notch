@@ -66,7 +66,7 @@ struct TimerWidget: View {
             Image(systemName: symbol)
                 .font(.system(size: side * 0.4, weight: .semibold))
                 .frame(width: side, height: side)
-                .background(.white.opacity(0.15), in: Circle())
+                .glassControl(in: Circle())
         }
         .buttonStyle(.plain)
     }

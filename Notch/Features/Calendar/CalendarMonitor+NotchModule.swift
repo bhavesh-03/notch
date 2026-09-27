@@ -74,7 +74,7 @@ struct CalendarSection: View {
                 .font(.caption)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(.white.opacity(0.15), in: Capsule())
+                .glassControl(in: Capsule())
 
             case .denied:
                 Image(systemName: "calendar.badge.exclamationmark")

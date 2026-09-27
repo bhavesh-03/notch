@@ -62,6 +62,7 @@ private struct ResetSection: View {
             HStack {
                 Spacer()
                 Button("Reset", action: action)
+                    .buttonStyle(.glass)
             }
         }
     }
@@ -120,9 +121,12 @@ struct HomeSettings: View {
             Section {
                 HStack {
                     AddWidgetMenu(settings: settings)
+                        .menuStyle(.button)
+                        .buttonStyle(.glass)
                         .fixedSize()
                     Spacer()
                     Button("Reset") { settings.homeLayout = .default }
+                        .buttonStyle(.glass)
                 }
             } footer: {
                 Text("You can also arrange Home right in the notch: right-click it and choose Edit Home.")
@@ -373,15 +377,16 @@ private struct AccentSwatch: View {
 
     var body: some View {
         Button(action: select) {
+            // A drop of tinted glass, like the accent picker in System Settings.
             Circle()
-                .fill(accent.color)
+                .fill(.clear)
                 .frame(width: 20, height: 20)
+                .glassEffect(.regular.tint(accent.color).interactive(), in: Circle())
                 .overlay {
                     if isSelected {
                         Circle().fill(.white).frame(width: 7, height: 7)
                     }
                 }
-                .overlay(Circle().strokeBorder(.black.opacity(0.15)))
         }
         .buttonStyle(.plain)
         .help(accent.title)

@@ -77,14 +77,14 @@ struct TimerSection: View {
                     Image(systemName: timer.isRunning ? "pause.fill" : "play.fill")
                         .contentTransition(.symbolEffect(.replace))
                         .frame(width: 32, height: 32)
-                        .background(.white.opacity(0.15), in: Circle())
+                        .glassControl(in: Circle())
                 }
                 Button {
                     timer.reset()
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .frame(width: 32, height: 32)
-                        .background(.white.opacity(0.15), in: Circle())
+                        .glassControl(in: Circle())
                 }
                 .disabled(!isActive)
                 .opacity(isActive ? 1 : 0.4)
