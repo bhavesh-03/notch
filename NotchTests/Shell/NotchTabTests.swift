@@ -18,7 +18,8 @@ struct NotchTabTests {
         let model = model()
         #expect(model.shelf.tab == NotchTab(title: "Files", symbol: "tray.full.fill"))
         #expect(model.shelf.acceptsFileDrops)
-        #expect(model.tabModules.count == 1)
+        #expect(model.tabModules.filter { $0.tab?.style == .tab }.map { $0.tab?.title } == ["Files"])
+        #expect(model.tabModules.filter { $0.tab?.style == .button }.map { $0.tab?.title } == ["Mirror"])
     }
 
     @Test func theNotchOpensOnHome() {

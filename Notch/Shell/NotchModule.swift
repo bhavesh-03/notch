@@ -40,12 +40,23 @@ protocol NotchModule: AnyObject {
 
     /// Whether files dragged onto the notch should go to this module's tab.
     var acceptsFileDrops: Bool { get }
+
+    /// Whether this module's page needs the tall expanded notch (e.g. a camera preview).
+    var wantsTallPage: Bool { get }
 }
 
-/// A tab in the expanded notch's tab bar.
+/// A page a module adds to the expanded notch, opened from the bar beside the camera.
 struct NotchTab: Equatable {
+    enum Style {
+        /// A labelled tab, left of the camera (e.g. Files).
+        case tab
+        /// An icon-only button, right of the camera (e.g. the mirror).
+        case button
+    }
+
     let title: String
     let symbol: String
+    var style: Style = .tab
 }
 
 extension NotchModule {
@@ -58,6 +69,8 @@ extension NotchModule {
     var tab: NotchTab? { nil }
 
     var acceptsFileDrops: Bool { false }
+
+    var wantsTallPage: Bool { false }
 }
 extension Array where Element == any NotchModule {
     /// The module that should occupy the collapsed ears: the highest `earPriority`, ignoring modules that return nil.

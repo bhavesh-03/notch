@@ -7,6 +7,7 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 ### Added
 - **Tabs** in the expanded notch: **Home** and **Files**. The file shelf moved into the Files tab and now holds 12 files; dragging a file onto the notch opens Files automatically from any tab.
 - The app's version and build number are shown at the top of the right-click menu.
+- **Mirror:** a camera button (right of the camera housing) opens a live, mirrored camera view in the notch. The camera runs only while the mirror is open; nothing is recorded or saved.
 
 ### Changed
 - Page height changes (switching tabs, the player row appearing or leaving) use a slower, softer spring.

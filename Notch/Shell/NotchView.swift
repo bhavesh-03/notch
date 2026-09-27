@@ -12,7 +12,7 @@ struct NotchView: View {
     private var size: CGSize {
         switch viewModel.presentation {
         case .collapsed: geometry.collapsedRect.size
-        case .expanded: NotchGeometry.expandedSize(withHeadline: viewModel.showsHeadline)
+        case .expanded: NotchGeometry.expandedSize(withHeadline: viewModel.isTall)
         case .activity: geometry.activitySize
         }
     }
@@ -47,7 +47,7 @@ struct NotchView: View {
                         .transition(NotchMotion.content(reduceMotion: reduceMotion))
                 }
             }
-            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion), value: viewModel.showsHeadline)
+            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion), value: viewModel.isTall)
             .foregroundStyle(.white)
             .clipShape(notchShape)
             .contextMenu { appMenu }
@@ -101,25 +101,46 @@ struct NotchView: View {
         .transition(.opacity)
     }
 
-    /// Home and one button per module tab, in the space beside the camera.
+    /// Home and the labelled tabs left of the camera; icon buttons (like the mirror) right of it.
     private var tabBar: some View {
-        HStack(spacing: 4) {
-            tabButton(title: "Home", symbol: "house.fill", module: nil)
-            ForEach(viewModel.tabModules.indices, id: \.self) { index in
-                let module = viewModel.tabModules[index]
-                if let tab = module.tab {
-                    tabButton(title: tab.title, symbol: tab.symbol, module: module)
+        HStack(spacing: 0) {
+            HStack(spacing: 4) {
+                tabButton(title: "Home", symbol: "house.fill", module: nil)
+                ForEach(tabs(.tab).indices, id: \.self) { index in
+                    let module = tabs(.tab)[index]
+                    if let tab = module.tab {
+                        tabButton(title: tab.title, symbol: tab.symbol, module: module)
+                    }
                 }
             }
+            .padding(.leading, 22)
+
+            Spacer()
+
+            HStack(spacing: 6) {
+                ForEach(tabs(.button).indices, id: \.self) { index in
+                    let module = tabs(.button)[index]
+                    if let tab = module.tab {
+                        iconButton(tab: tab, module: module)
+                    }
+                }
+            }
+            .padding(.trailing, 22)
         }
         .buttonStyle(.plain)
         .frame(height: geometry.notchRect.height)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, 22)
+    }
+
+    private func tabs(_ style: NotchTab.Style) -> [any NotchModule] {
+        viewModel.tabModules.filter { $0.tab?.style == style }
+    }
+
+    private func isSelected(_ module: (any NotchModule)?) -> Bool {
+        viewModel.selectedTab == module.map { ObjectIdentifier($0) }
     }
 
     private func tabButton(title: String, symbol: String, module: (any NotchModule)?) -> some View {
-        let isSelected = viewModel.selectedTab == module.map { ObjectIdentifier($0) }
+        let selected = isSelected(module)
         return Button {
             viewModel.select(tab: module)
         } label: {
@@ -127,10 +148,26 @@ struct NotchView: View {
                 .font(.caption.weight(.medium))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
-                .background(isSelected ? .white.opacity(0.18) : .clear, in: Capsule())
-                .foregroundStyle(.white.opacity(isSelected ? 1 : 0.55))
+                .background(selected ? .white.opacity(0.18) : .clear, in: Capsule())
+                .foregroundStyle(.white.opacity(selected ? 1 : 0.55))
                 .contentShape(Capsule())
         }
+    }
+
+    /// Toggles its page: opens it, or goes back to Home if it's already open.
+    private func iconButton(tab: NotchTab, module: any NotchModule) -> some View {
+        let selected = isSelected(module)
+        return Button {
+            viewModel.select(tab: selected ? nil : module)
+        } label: {
+            Image(systemName: tab.symbol)
+                .font(.caption.weight(.medium))
+                .frame(width: 24, height: 22)
+                .background(selected ? .white.opacity(0.18) : .clear, in: Capsule())
+                .foregroundStyle(.white.opacity(selected ? 1 : 0.55))
+                .contentShape(Capsule())
+        }
+        .help(tab.title)
     }
 
     private func tabPage(for module: any NotchModule) -> some View {

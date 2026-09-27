@@ -35,6 +35,7 @@ final class NotchViewModel {
     let calendar = CalendarMonitor()
     let shelf = ShelfStore()
     let nowPlaying = NowPlayingMonitor()
+    let mirror = MirrorCamera()
     let launchAtLogin = LaunchAtLogin()
     var hasHeadline: Bool { modules.headliner != nil }
 
@@ -50,6 +51,9 @@ final class NotchViewModel {
     /// The headline (media player) belongs to Home only.
     var showsHeadline: Bool { selectedTab == nil && hasHeadline }
 
+    /// The expanded notch is tall for the player row on Home, or for a page that asks for it.
+    var isTall: Bool { showsHeadline || selectedTabModule?.wantsTallPage == true }
+
     func select(tab module: (any NotchModule)?) {
         selectedTab = module.map { ObjectIdentifier($0) }
     }
@@ -59,7 +63,7 @@ final class NotchViewModel {
         guard let target = tabModules.first(where: { $0.acceptsFileDrops }) else { return }
         select(tab: target)
     }
-    var modules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying] }
+    var modules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, mirror] }
 
     @ObservationIgnored private let reduceMotion: () -> Bool
 

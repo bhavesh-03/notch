@@ -128,7 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let viewModel else { return }
         
         let mouse = NSEvent.mouseLocation
-        let activeRect = viewModel.geometry.hoverTarget(isExpanded: viewModel.isExpanded, hasHeadline: viewModel.showsHeadline, isDraggingFile: isDraggingFile)
+        let activeRect = viewModel.geometry.hoverTarget(isExpanded: viewModel.isExpanded, hasHeadline: viewModel.isTall, isDraggingFile: isDraggingFile)
         
         if activeRect.contains(mouse) {
             viewModel.expand()
