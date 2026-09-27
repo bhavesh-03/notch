@@ -28,6 +28,12 @@ struct NowPlayingInfo: Equatable, Decodable {
         return title != previous.title || artist != previous.artist
     }
 
+    /// Whether the app with `bundleIdentifier` is the one playing. Used to step aside while you're
+    /// looking at the player itself. macOS reports the app, not the window or tab.
+    func isFrom(app bundleIdentifier: String?) -> Bool {
+        bundleIdentifier == appBundleIdentifier
+    }
+
     /// Decodes one line from the bridge: an info when something is playing, nil when nothing is.
     static func decode(line: Data) throws -> NowPlayingInfo? {
         let decoder = JSONDecoder()

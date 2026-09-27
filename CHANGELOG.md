@@ -12,6 +12,7 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 
 ### Changed
 - Page height changes (switching tabs, the player row appearing or leaving) use a slower, softer spring.
+- Now Playing steps out of the ears, and skips the new-track pop-up, while you're in the app that's playing. The player row in the expanded notch stays.
 
 ### Fixed
 - Dragging a file out of the shelf and dropping it back no longer adds it twice; the shelf recognizes the same file, including a copy Finder made of it.
