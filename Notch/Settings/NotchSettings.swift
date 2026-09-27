@@ -12,6 +12,31 @@ final class NotchSettings {
     private(set) var featureOrder: [NotchFeature]
     private(set) var hiddenFeatures: Set<NotchFeature>
 
+    /// Expanded width. Changing it resizes the panel, so it's reported through `onGeometryChanged`.
+    var width: NotchWidth {
+        didSet { save(width.rawValue, Keys.width); onGeometryChanged?() }
+    }
+    /// Corner radius of the expanded notch, in points.
+    var cornerRadius: Double {
+        didSet {
+            let clamped = cornerRadius.clamped(to: Self.cornerRadiusRange)
+            if cornerRadius != clamped { cornerRadius = clamped; return }
+            save(cornerRadius, Keys.cornerRadius)
+        }
+    }
+    var accent: NotchAccent {
+        didSet { save(accent.rawValue, Keys.accent) }
+    }
+    var showsEars: Bool {
+        didSet { save(showsEars, Keys.showsEars); onGeometryChanged?() }
+    }
+
+    static let defaultCornerRadius: Double = 24
+    static let cornerRadiusRange: ClosedRange<Double> = 12...32
+
+    /// Called when a setting changes the notch's geometry (its width, or its ears).
+    @ObservationIgnored var onGeometryChanged: (() -> Void)?
+
     /// Called after any change to which features are shown or their order.
     @ObservationIgnored var onFeaturesChanged: (() -> Void)?
 
@@ -21,6 +46,11 @@ final class NotchSettings {
         self.defaults = defaults
         featureOrder = Self.normalized(order: Self.features(forKey: Keys.featureOrder, in: defaults))
         hiddenFeatures = Set(Self.features(forKey: Keys.hiddenFeatures, in: defaults))
+        // `didSet` doesn't run for assignments in init, so loading doesn't write anything back.
+        width = defaults.string(forKey: Keys.width).flatMap(NotchWidth.init(rawValue:)) ?? .standard
+        cornerRadius = (defaults.object(forKey: Keys.cornerRadius) as? Double)?.clamped(to: Self.cornerRadiusRange) ?? Self.defaultCornerRadius
+        accent = defaults.string(forKey: Keys.accent).flatMap(NotchAccent.init(rawValue:)) ?? .orange
+        showsEars = defaults.object(forKey: Keys.showsEars) as? Bool ?? true
     }
 
     /// Settings kept in a throwaway domain, for tests and previews, so they never read or change the
@@ -72,11 +102,28 @@ final class NotchSettings {
         return known + NotchFeature.allCases.filter { !seen.contains($0) }
     }
 
+    // MARK: - Look
+
+    func resetLook() {
+        width = .standard
+        cornerRadius = Self.defaultCornerRadius
+        accent = .orange
+        showsEars = true
+    }
+
     // MARK: - Storage
 
     private enum Keys {
         static let featureOrder = "settings.featureOrder"
         static let hiddenFeatures = "settings.hiddenFeatures"
+        static let width = "settings.width"
+        static let cornerRadius = "settings.cornerRadius"
+        static let accent = "settings.accent"
+        static let showsEars = "settings.showsEars"
+    }
+
+    private func save(_ value: Any, _ key: String) {
+        defaults.set(value, forKey: key)
     }
 
     private func saveFeatures() {
@@ -88,5 +135,11 @@ final class NotchSettings {
     /// Unknown names (say, from a newer version's preferences) are skipped rather than failing.
     private static func features(forKey key: String, in defaults: UserDefaults) -> [NotchFeature] {
         (defaults.stringArray(forKey: key) ?? []).compactMap(NotchFeature.init(rawValue:))
+    }
+}
+
+extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }

@@ -80,6 +80,79 @@ struct NotchSettingsTests {
 }
 
 @MainActor
+struct LookSettingsTests {
+    let suite = "LookSettingsTests.\(UUID().uuidString)"
+    var defaults: UserDefaults { UserDefaults(suiteName: suite)! }
+
+    @Test func startsWithTodaysLook() {
+        let settings = NotchSettings(defaults: defaults)
+        #expect(settings.width == .standard)
+        #expect(settings.width.points == NotchGeometry.defaultExpandedWidth)
+        #expect(settings.cornerRadius == 24)
+        #expect(settings.accent == .orange)
+        #expect(settings.showsEars)
+    }
+
+    @Test func theLookSurvivesARelaunch() {
+        let settings = NotchSettings(defaults: defaults)
+        settings.width = .wide
+        settings.cornerRadius = 30
+        settings.accent = .mint
+        settings.showsEars = false
+
+        let relaunched = NotchSettings(defaults: defaults)
+        #expect(relaunched.width == .wide)
+        #expect(relaunched.cornerRadius == 30)
+        #expect(relaunched.accent == .mint)
+        #expect(!relaunched.showsEars)
+    }
+
+    @Test(arguments: [(0.0, 12.0), (50.0, 32.0), (20.0, 20.0)])
+    func cornersStayInRange(requested: Double, expected: Double) {
+        let settings = NotchSettings(defaults: defaults)
+        settings.cornerRadius = requested
+        #expect(settings.cornerRadius == expected)
+        #expect(NotchSettings(defaults: defaults).cornerRadius == expected)
+    }
+
+    @Test func onlyWidthAndEarsChangeTheGeometry() {
+        let settings = NotchSettings(defaults: defaults)
+        var changes = 0
+        settings.onGeometryChanged = { changes += 1 }
+        settings.accent = .blue
+        settings.cornerRadius = 16
+        #expect(changes == 0)
+        settings.width = .compact
+        settings.showsEars = false
+        #expect(changes == 2)
+    }
+
+    @Test func resetRestoresTodaysLook() {
+        let settings = NotchSettings(defaults: defaults)
+        settings.width = .compact
+        settings.cornerRadius = 12
+        settings.accent = .pink
+        settings.showsEars = false
+        settings.resetLook()
+        #expect(settings.width == .standard && settings.cornerRadius == 24 && settings.accent == .orange && settings.showsEars)
+    }
+
+    @Test func unknownSavedValuesFallBackToDefaults() {
+        defaults.set("gigantic", forKey: "settings.width")
+        defaults.set("chartreuse", forKey: "settings.accent")
+        let settings = NotchSettings(defaults: defaults)
+        #expect(settings.width == .standard)
+        #expect(settings.accent == .orange)
+    }
+
+    @Test func widthsGrowInOrder() {
+        let points = NotchWidth.allCases.map(\.points)
+        #expect(points == points.sorted())
+        #expect(Set(points).count == points.count)
+    }
+}
+
+@MainActor
 struct FeatureVisibilityTests {
     private func model() -> (NotchViewModel, NotchSettings) {
         let settings = NotchSettings.ephemeral()

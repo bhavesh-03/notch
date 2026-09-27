@@ -12,7 +12,7 @@ struct NotchView: View {
     private var size: CGSize {
         switch viewModel.presentation {
         case .collapsed: geometry.collapsedRect.size
-        case .expanded: NotchGeometry.expandedSize(withHeadline: viewModel.isTall)
+        case .expanded: geometry.expandedSize(withHeadline: viewModel.isTall)
         case .activity: geometry.activitySize
         }
     }
@@ -20,8 +20,9 @@ struct NotchView: View {
     private var cornerRadius: CGFloat {
         switch viewModel.presentation {
         case .collapsed: 10
-        case .expanded: 24
-        case .activity: 22
+        case .expanded: viewModel.settings.cornerRadius
+        // Slightly tighter than expanded, as before; the activity shape is much shorter.
+        case .activity: min(viewModel.settings.cornerRadius, 22)
         }
     }
 
@@ -52,6 +53,8 @@ struct NotchView: View {
             // Below the clip on purpose: `.animation` only animates what's above it. Above the clip,
             // the clip would jump to the new size while the shape animated inside it, hiding a shrink.
             .animation(NotchMotion.pageResize(reduceMotion: reduceMotion), value: viewModel.isTall)
+            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion), value: viewModel.settings.cornerRadius)
+            .environment(\.notchAccent, viewModel.settings.accent.color)
             .contextMenu { appMenu }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -68,6 +71,8 @@ struct NotchView: View {
     private var collapsedContent: some View {
         Group {
             switch geometry.kind {
+            case .hardware where !geometry.showsEars:
+                EmptyView()
             case .hardware:
                 HStack(spacing: 0) {
                     ear(.leadingEar)

@@ -9,16 +9,23 @@ import AppKit
 
 struct NotchGeometry {
     
-    static let expandedSize = CGSize(width: 540, height: 150)
+    static let defaultExpandedWidth: CGFloat = 540
+    static let expandedHeight: CGFloat = 150
     /// Extra height for a full-width headline row (the media player) above the module columns.
     static let headlineHeight: CGFloat = 74
 
-    static func expandedSize(withHeadline: Bool) -> CGSize {
-        withHeadline ? CGSize(width: expandedSize.width, height: expandedSize.height + headlineHeight) : expandedSize
+    /// The expanded width the user chose in Settings.
+    var expandedWidth: CGFloat = NotchGeometry.defaultExpandedWidth
+    /// Whether the collapsed notch has ears beside the camera; without them it's just the notch.
+    var showsEars = true
+
+    func expandedSize(withHeadline: Bool) -> CGSize {
+        CGSize(width: expandedWidth, height: Self.expandedHeight + (withHeadline ? Self.headlineHeight : 0))
     }
 
-    /// The panel is sized for the tallest state, so it never resizes; the shape grows inside it.
-    static var panelSize: CGSize { expandedSize(withHeadline: true) }
+    /// The panel is sized for the tallest state, so it never resizes while in use; the shape grows
+    /// inside it. (It's rebuilt when the screen or the chosen width changes.)
+    var panelSize: CGSize { expandedSize(withHeadline: true) }
     static let activityEarWidth: CGFloat = 80
     static let activityDetailHeight: CGFloat = 26
     let screenFrame: CGRect
@@ -30,7 +37,8 @@ struct NotchGeometry {
     
     var collapsedRect: CGRect {
         switch kind {
-        case .hardware: notchRect.insetBy(dx: -Self.earWidth, dy: 0)
+        case .hardware where showsEars: notchRect.insetBy(dx: -Self.earWidth, dy: 0)
+        case .hardware: notchRect
         case .virtual:  notchRect
         }
     }
@@ -91,16 +99,16 @@ struct NotchGeometry {
 
     /// Where the expanded shape actually is: the visible part of the panel.
     func expandedRect(withHeadline: Bool) -> CGRect {
-        let size = Self.expandedSize(withHeadline: withHeadline)
+        let size = expandedSize(withHeadline: withHeadline)
         return CGRect(x: notchRect.midX - size.width / 2, y: screenFrame.maxY - size.height, width: size.width, height: size.height)
     }
 
     var panelRect: CGRect {
         CGRect(
-            x: notchRect.midX - Self.panelSize.width / 2,
-            y: screenFrame.maxY - Self.panelSize.height,
-            width: Self.panelSize.width,
-            height: Self.panelSize.height
+            x: notchRect.midX - panelSize.width / 2,
+            y: screenFrame.maxY - panelSize.height,
+            width: panelSize.width,
+            height: panelSize.height
         )
     }
     

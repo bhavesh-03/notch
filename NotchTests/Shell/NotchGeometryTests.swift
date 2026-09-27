@@ -27,7 +27,7 @@ struct NotchGeometryTests {
         let geometry = hardware(screen: airScreen)
         #expect(geometry.panelRect.midX == geometry.notchRect.midX)
         #expect(geometry.panelRect.maxY == airScreen.maxY)
-        #expect(geometry.panelRect.size == NotchGeometry.panelSize)
+        #expect(geometry.panelRect.size == geometry.panelSize)
     }
 
     @Test func screenAwayFromGlobalOriginIsHandled() {
@@ -77,8 +77,9 @@ struct NotchGeometryTests {
     }
 
     @Test func theHeadlineAddsHeightButNotWidth() {
-        let plain = NotchGeometry.expandedSize(withHeadline: false)
-        let withPlayer = NotchGeometry.expandedSize(withHeadline: true)
+        let geometry = hardware(screen: airScreen)
+        let plain = geometry.expandedSize(withHeadline: false)
+        let withPlayer = geometry.expandedSize(withHeadline: true)
         #expect(withPlayer.width == plain.width)
         #expect(withPlayer.height == plain.height + NotchGeometry.headlineHeight)
     }
@@ -91,10 +92,24 @@ struct NotchGeometryTests {
 
     @Test func hoveringBelowTheVisibleShapeDoesNotKeepItOpen() {
         let geometry = hardware(screen: airScreen)
-        let inTheEmptyStrip = CGPoint(x: geometry.notchRect.midX, y: airScreen.maxY - NotchGeometry.expandedSize.height - 20)
+        let inTheEmptyStrip = CGPoint(x: geometry.notchRect.midX, y: airScreen.maxY - NotchGeometry.expandedHeight - 20)
 
         #expect(geometry.panelRect.contains(inTheEmptyStrip), "the transparent part of the panel")
         #expect(!geometry.hoverTarget(isExpanded: true, hasHeadline: false, isDraggingFile: false).contains(inTheEmptyStrip))
         #expect(geometry.hoverTarget(isExpanded: true, hasHeadline: true, isDraggingFile: false).contains(inTheEmptyStrip))
+    }
+
+    @Test func theChosenWidthSizesTheShapeAndThePanel() {
+        var geometry = hardware(screen: airScreen)
+        geometry.expandedWidth = 620
+        #expect(geometry.expandedRect(withHeadline: false).width == 620)
+        #expect(geometry.panelRect.width == 620)
+        #expect(geometry.expandedRect(withHeadline: true).midX == geometry.notchRect.midX, "still centered on the notch")
+    }
+
+    @Test func withoutEarsTheCollapsedNotchIsJustTheNotch() {
+        var geometry = hardware(screen: airScreen)
+        geometry.showsEars = false
+        #expect(geometry.collapsedRect == geometry.notchRect)
     }
 }

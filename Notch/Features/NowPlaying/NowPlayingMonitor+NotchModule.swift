@@ -93,6 +93,7 @@ private struct PlayerRow: View {
 /// A thin progress line with elapsed and remaining time, redrawn once a second from the extrapolated position.
 private struct PlaybackProgress: View {
     let info: NowPlayingInfo
+    @Environment(\.notchAccent) private var accent
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -104,7 +105,7 @@ private struct PlaybackProgress: View {
                         .fill(.white.opacity(0.25))
                         .overlay(alignment: .leading) {
                             Capsule()
-                                .fill(.white)
+                                .fill(accent)
                                 .frame(width: proxy.size.width * min(1, elapsed / info.duration))
                         }
                 }

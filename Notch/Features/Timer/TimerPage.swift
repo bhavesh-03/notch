@@ -5,7 +5,7 @@ import SwiftUI
 struct TimerPage: View {
     let timer: TimerController
 
-    static let accent = Color(red: 0.96, green: 0.62, blue: 0.29)
+    @Environment(\.notchAccent) private var accent
 
     var body: some View {
         Group {
@@ -33,10 +33,10 @@ struct TimerPage: View {
                 } label: {
                     Text("Start Timer")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Self.accent)
+                        .foregroundStyle(accent)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 9)
-                        .background(Self.accent.opacity(0.2), in: Capsule())
+                        .background(accent.opacity(0.2), in: Capsule())
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -46,7 +46,7 @@ struct TimerPage: View {
                 Text(TimerFormat.string(seconds: Int(timer.duration)))
                     .font(.system(size: 40, weight: .light))
                     .monospacedDigit()
-                    .foregroundStyle(Self.accent)
+                    .foregroundStyle(accent)
                     .contentTransition(.numericText())
                     .animation(.snappy, value: timer.duration)
             }
@@ -67,7 +67,7 @@ struct TimerPage: View {
 
             Countdown(timer: timer)
                 .font(.system(size: 52, weight: .light))
-                .foregroundStyle(Self.accent)
+                .foregroundStyle(accent)
         }
         .padding(.horizontal, 12)
         .frame(maxHeight: .infinity)
@@ -78,10 +78,10 @@ struct TimerPage: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Self.accent)
+                .foregroundStyle(accent)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 46, height: 46)
-                .background(Self.accent.opacity(0.2), in: Circle())
+                .background(accent.opacity(0.2), in: Circle())
                 .contentShape(Circle())
         }
     }
@@ -94,6 +94,7 @@ struct TimerPage: View {
 /// scrolling; the selection is that value snapped to a step, and the ruler springs to it on release.
 /// Click and hold for half a second to zoom in 4× and choose in 15-second steps.
 struct DurationRuler: View {
+    @Environment(\.notchAccent) private var accent
     @Binding var seconds: TimeInterval
 
     /// The ruler shows 0 so the scale reads naturally, but 0 can't be chosen.
@@ -152,6 +153,7 @@ struct DurationRuler: View {
     var body: some View {
         GeometryReader { proxy in
             RulerCanvas(
+                accent: accent,
                 position: position,
                 pointsPerSecond: Double(pointsPerSecond),
                 glow: glowAmount,
@@ -168,7 +170,7 @@ struct DurationRuler: View {
             .overlay(alignment: .bottom) {
                 Image(systemName: "triangle.fill")
                     .font(.system(size: 10))
-                    .foregroundStyle(TimerPage.accent)
+                    .foregroundStyle(accent)
             }
             .contentShape(Rectangle())
             .gesture(dragGesture(width: proxy.size.width))
@@ -308,6 +310,7 @@ struct DurationRuler: View {
 /// Draws only the visible ticks, in one view. Conforming to Animatable lets SwiftUI interpolate
 /// position, zoom and glow frame by frame (a Canvas on its own would jump to final values).
 private struct RulerCanvas: View, Animatable {
+    let accent: Color
     var position: Double
     var pointsPerSecond: Double
     var glow: Double
@@ -325,11 +328,11 @@ private struct RulerCanvas: View, Animatable {
 
     private static let labelY: CGFloat = 8
     private static let tickBottom: CGFloat = 58
-    private static let warmWhite = Color(red: 1, green: 0.86, blue: 0.68)
+    /// The glow's hot center: the accent pushed most of the way to white.
+    private var glowCore: Color { accent.mix(with: .white, by: 0.65) }
 
     var body: some View {
         Canvas { context, size in
-            let accent = TimerPage.accent
             let coarse = Double(DurationRuler.pointsPerSecond(fine: false))
             let fine = Double(DurationRuler.pointsPerSecond(fine: true))
             // 0 when zoomed out, 1 when zoomed in; drives the quarter ticks and extra labels fading in.
@@ -361,7 +364,7 @@ private struct RulerCanvas: View, Animatable {
                     halo.fill(Path(roundedRect: tick.insetBy(dx: -3, dy: -3), cornerRadius: 4),
                               with: .color(accent.opacity(0.9 * glow)))
                     context.fill(tickPath, with: .color(accent.opacity(brightness)))
-                    context.fill(tickPath, with: .color(Self.warmWhite.opacity(glow)))
+                    context.fill(tickPath, with: .color(glowCore.opacity(glow)))
                 } else {
                     context.fill(tickPath, with: .color(accent.opacity(brightness * visibility)))
                 }

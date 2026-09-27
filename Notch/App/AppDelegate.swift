@@ -22,7 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         
-        guard let geometry = Self.currentGeometry() else { return }
+        guard let geometry = currentGeometry() else { return }
         
         let viewModel = NotchViewModel(geometry: geometry, settings: settings)
         self.viewModel = viewModel
@@ -57,6 +57,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         viewModel.onOpenSettings = { [weak self] in
             self?.settingsWindow.show()
+        }
+        settings.onGeometryChanged = { [weak self] in
+            self?.updateGeometry()
         }
         settings.onFeaturesChanged = { [weak self] in
             self?.applyFeatureSettings()
@@ -105,7 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             for await _ in NotificationCenter.default.notifications(
                 named: NSApplication.didChangeScreenParametersNotification
             ) {
-                self?.screensDidChange()
+                self?.updateGeometry()
             }
         }
         
@@ -163,14 +166,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
     }
     
-    private static func currentGeometry() -> NotchGeometry? {
+    /// The notch on the current screen, shaped by the user's Look settings.
+    private func currentGeometry() -> NotchGeometry? {
         let notchedScreen = NSScreen.screens.first { $0.safeAreaInsets.top > 0 }
         guard let screen = notchedScreen ?? NSScreen.main else { return nil }
-        return NotchGeometry(screen: screen)
+        var geometry = NotchGeometry(screen: screen)
+        geometry.expandedWidth = settings.width.points
+        geometry.showsEars = settings.showsEars
+        return geometry
     }
     
-    private func screensDidChange() {
-        guard let panel, let viewModel, let geometry = Self.currentGeometry() else { return }
+    /// Rebuilds the geometry after the screen or a Look setting changed, and moves the panel to match.
+    private func updateGeometry() {
+        guard let panel, let viewModel, let geometry = currentGeometry() else { return }
         viewModel.geometry = geometry
         panel.setFrame(geometry.panelRect, display: true)
     }
