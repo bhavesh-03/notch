@@ -9,10 +9,18 @@ extension CalendarMonitor: NotchModule {
         return 5
     }
 
+    /// Opened from the Calendar widget rather than a tab button, like the timer's page.
+    var tab: NotchTab? { NotchTab(title: "Calendar", symbol: "calendar", style: .page) }
+
+    /// The day strip and the event list need the tall notch.
+    var wantsTallPage: Bool { true }
+
     @ViewBuilder
     func content(for placement: NotchPlacement) -> some View {
         switch placement {
-        case .headline, .page:
+        case .page:
+            CalendarPage(calendar: self)
+        case .headline:
             EmptyView()
         case .leadingEar, .activityLeading:
             Image(systemName: "calendar")

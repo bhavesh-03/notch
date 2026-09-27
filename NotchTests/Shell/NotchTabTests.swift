@@ -20,7 +20,7 @@ struct NotchTabTests {
         #expect(model.shelf.acceptsFileDrops)
         #expect(model.tabModules.filter { $0.tab?.style == .tab }.map { $0.tab?.title } == ["Files"])
         #expect(model.tabModules.filter { $0.tab?.style == .button }.map { $0.tab?.title } == ["Mirror"])
-        #expect(model.tabModules.filter { $0.tab?.style == .page }.map { $0.tab?.title } == ["Timer"])
+        #expect(model.tabModules.filter { $0.tab?.style == .page }.map { $0.tab?.title } == ["Timer", "Calendar"])
     }
 
     @Test func theNotchOpensOnHome() {

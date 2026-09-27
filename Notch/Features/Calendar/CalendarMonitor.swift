@@ -1,3 +1,4 @@
+import AppKit
 import EventKit
 
 @Observable
@@ -10,6 +11,8 @@ final class CalendarMonitor {
 
     private(set) var access: Access
     private(set) var nextEvent: CalendarEvent?
+    /// What's coming up, soonest first, for the bigger widgets: the rest of today and the next few days.
+    private(set) var upcoming: [CalendarEvent] = []
     /// When the event was last evaluated; observed, so views re-render at each scheduled wake-up.
     private(set) var evaluatedAt = Date()
 
@@ -42,6 +45,11 @@ final class CalendarMonitor {
             calendars: nil
         )
         let events = store.events(matching: predicate).map { CalendarEvent($0) }
+        upcoming = self.events(from: now, to: now.addingTimeInterval(7 * 24 * 3600))
+            .filter { $0.end > now }
+            .sorted { ($0.isAllDay ? 0 : 1, $0.start) < ($1.isAllDay ? 0 : 1, $1.start) }
+            .prefix(8)
+            .map { $0 }
 
         let previous = nextEvent
         let previousEvaluation = evaluatedAt
@@ -52,6 +60,23 @@ final class CalendarMonitor {
             onEventStarted?(nextEvent)
         }
         scheduleWake()
+    }
+
+    /// Events overlapping a range, earliest first; for the calendar page's month and day.
+    func events(from start: Date, to end: Date) -> [CalendarEvent] {
+        guard access == .granted else { return [] }
+        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: nil)
+        return store.events(matching: predicate)
+            .map { CalendarEvent($0) }
+            .sorted { $0.start < $1.start }
+    }
+
+    /// Opens the event in the Calendar app.
+    static func openInCalendar(_ event: CalendarEvent) {
+        let identifier = event.id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? event.id
+        if let url = URL(string: "ical://ekevent/\(identifier)?method=show&options=more") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     /// Sleeps until the next moment the display should change, instead of polling.
@@ -93,7 +118,18 @@ private extension CalendarEvent {
             title: event.title ?? "Untitled",
             start: event.startDate,
             end: event.endDate,
-            isAllDay: event.isAllDay
+            isAllDay: event.isAllDay,
+            color: event.calendar?.cgColor.flatMap { EventColor($0) },
+            location: event.location,
+            callURL: CallLink.find(in: [event.url?.absoluteString, event.location, event.notes])
         )
+    }
+}
+
+private extension CalendarEvent.EventColor {
+    init?(_ color: CGColor) {
+        guard let rgb = color.converted(to: CGColorSpace(name: CGColorSpace.sRGB)!, intent: .defaultIntent, options: nil),
+              let c = rgb.components, c.count >= 3 else { return nil }
+        self.init(red: c[0], green: c[1], blue: c[2])
     }
 }

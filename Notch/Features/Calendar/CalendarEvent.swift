@@ -7,6 +7,19 @@ struct CalendarEvent: Equatable, Identifiable {
     let start: Date
     let end: Date
     let isAllDay: Bool
+    /// The color of the calendar it's in, as Calendar shows it.
+    var color: EventColor? = nil
+    var location: String? = nil
+    /// A Zoom / Meet / Teams / FaceTime / Webex link found in the event, for a Join button.
+    var callURL: URL? = nil
+
+    struct EventColor: Equatable {
+        let red: Double
+        let green: Double
+        let blue: Double
+    }
+
+    var duration: TimeInterval { end.timeIntervalSince(start) }
 
     /// How long before the start the event claims the notch's ears.
     static let headsUp: TimeInterval = 10 * 60
