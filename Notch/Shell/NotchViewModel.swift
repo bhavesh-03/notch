@@ -54,6 +54,22 @@ final class NotchViewModel {
     /// The expanded notch is tall for the player row on Home, or for a page that asks for it.
     var isTall: Bool { showsHeadline || selectedTabModule?.wantsTallPage == true }
 
+    @ObservationIgnored private var keepsTallHover = false
+
+    /// Whether hover should use the tall shape. When the notch shrinks away from a pointer that
+    /// hasn't moved (e.g. pressing Start Timer near the bottom), that isn't the user leaving: the
+    /// tall shape keeps counting for as long as the pointer stays inside it. Once it moves out,
+    /// normal hover resumes. (Based on where the pointer is, not on a timeout.)
+    func hoverIsTall(pointerInTallShape: Bool) -> Bool {
+        if isTall {
+            keepsTallHover = true
+            return true
+        }
+        if keepsTallHover, pointerInTallShape { return true }
+        keepsTallHover = false
+        return false
+    }
+
     func select(tab module: (any NotchModule)?) {
         selectedTab = module.map { ObjectIdentifier($0) }
     }
@@ -117,6 +133,7 @@ final class NotchViewModel {
             withAnimation(.snappy) {
                 presentation = .collapsed
                 selectedTab = nil
+                keepsTallHover = false
             }
             collapseTask = nil
         }

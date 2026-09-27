@@ -46,6 +46,13 @@ final class TimerController {
         cancelFinish()
     }
     
+    /// The length the timer is set to, in seconds.
+    var duration: TimeInterval { state.duration }
+
+    func setDuration(seconds: TimeInterval) {
+        state.setDuration(seconds: seconds)
+    }
+
     func toggle() {
         isRunning ? pause() : start()
     }

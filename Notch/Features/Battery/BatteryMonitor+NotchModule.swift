@@ -25,7 +25,7 @@ extension BatteryMonitor: NotchModule {
                         .font(.caption2)
                 case .expanded:
                     BatterySection(status: status)
-                case .headline:
+                case .headline, .page:
                     EmptyView()
                 case .activityLeading:
                     ChargingBattery(status: status)

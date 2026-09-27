@@ -18,8 +18,7 @@ struct NotchPresentationTests {
         model.showActivity(from: model.timer, for: .milliseconds(50))
         #expect(model.presentation == .activity(model.timer))
         #expect(!model.isExpanded)
-        try await Task.sleep(for: .milliseconds(300))
-        #expect(model.presentation == .collapsed)
+        #expect(await eventually { model.presentation == .collapsed })
     }
 
     @Test func hoverDuringActivityExpandsAndStaysExpanded() async throws {
@@ -40,11 +39,12 @@ struct NotchPresentationTests {
 
     @Test func newActivityReplacesCurrentOneAndRestartsItsTimer() async throws {
         let model = model()
-        model.showActivity(from: model.battery, for: .milliseconds(100))
-        try await Task.sleep(for: .milliseconds(60))
-        model.showActivity(from: model.timer, for: .milliseconds(200))
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(model.presentation == .activity(model.timer))
+        // The battery activity alone would end at 0.6 s; the timer's replaces it at 0.2 s and lasts until 2.2 s.
+        model.showActivity(from: model.battery, for: .milliseconds(600))
+        try await Task.sleep(for: .milliseconds(200))
+        model.showActivity(from: model.timer, for: .seconds(2))
+        try await Task.sleep(for: .milliseconds(800))
+        #expect(model.presentation == .activity(model.timer), "still showing at 1.0 s: the battery's timer was cancelled")
     }
 
     @Test func onExpandedChangeOnlyReportsExpansion() {
@@ -103,7 +103,6 @@ struct HoldOpenTests {
         model.holdOpen()
         model.releaseHold()
         model.scheduleCollapse()
-        try await Task.sleep(for: .milliseconds(500))
-        #expect(!model.isExpanded)
+        #expect(await eventually { !model.isExpanded })
     }
 }

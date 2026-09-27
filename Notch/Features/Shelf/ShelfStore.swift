@@ -69,7 +69,7 @@ final class ShelfStore {
     private func reference(_ url: URL) -> ReferenceResult {
         guard url.isFileURL else { return .unusable }
         let url = url.standardizedFileURL
-        guard !items.contains(where: { $0.url == url }) else { return .duplicate }
+        guard !isAlreadyShelved(url) else { return .duplicate }
 
         let isAccessing = url.startAccessingSecurityScopedResource()
         guard FileManager.default.isReadableFile(atPath: url.path),
@@ -83,8 +83,52 @@ final class ShelfStore {
         return .added
     }
 
+    /// Whether `url` is something the shelf already holds: the same file, or a copy of one.
+    /// Dragging an item out to Finder usually *copies* it, so the file dropped back in is a new
+    /// file with identical contents. That's still "the same thing" to the user.
+    private func isAlreadyShelved(_ url: URL, ignoring newCopy: URL? = nil) -> Bool {
+        items.contains { item in
+            item.url != newCopy && (Self.isSameFile(item.url, url) || Self.hasSameContents(item.url, url))
+        }
+    }
+
+    /// Byte-for-byte equality, checked only when sizes match so unrelated files cost one stat each.
+    static func hasSameContents(_ a: URL, _ b: URL) -> Bool {
+        let key: Set<URLResourceKey> = [.fileSizeKey, .isRegularFileKey]
+        guard let valuesA = try? a.resourceValues(forKeys: key), let valuesB = try? b.resourceValues(forKeys: key),
+              valuesA.isRegularFile == true, valuesB.isRegularFile == true,
+              let sizeA = valuesA.fileSize, sizeA == valuesB.fileSize
+        else { return false }
+        return FileManager.default.contentsEqual(atPath: a.path, andPath: b.path)
+    }
+
+    /// Whether two URLs point at the same file on disk. URL text isn't enough: /var and /private/var,
+    /// symlinks, or a trailing slash all name one file differently. The file system's resource
+    /// identifier answers "same file?" directly; resolved paths are the fallback.
+    static func isSameFile(_ a: URL, _ b: URL) -> Bool {
+        // A symlink has its own identifier, so follow links before asking.
+        let a = a.resolvingSymlinksInPath().standardizedFileURL
+        let b = b.resolvingSymlinksInPath().standardizedFileURL
+        let key: Set<URLResourceKey> = [.fileResourceIdentifierKey]
+        if let idA = try? a.resourceValues(forKeys: key).fileResourceIdentifier,
+           let idB = try? b.resourceValues(forKeys: key).fileResourceIdentifier {
+            return idA.isEqual(idB)
+        }
+        return a == b
+    }
+
+    /// What a shelf item offers when dragged out: the file itself, and explicitly its URL, so a drop
+    /// back onto the shelf is recognized as the same file instead of being copied as new data.
+    static func dragProvider(for item: Item) -> NSItemProvider {
+        let provider = NSItemProvider(contentsOf: item.url) ?? NSItemProvider()
+        provider.registerObject(item.url as NSURL, visibility: .all)
+        provider.suggestedName = item.url.deletingPathExtension().lastPathComponent
+        return provider
+    }
+
     private func adoptCopy(_ url: URL) {
-        guard let bookmark = try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) else {
+        guard !isAlreadyShelved(url, ignoring: url),
+              let bookmark = try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) else {
             try? FileManager.default.removeItem(at: url)
             return
         }

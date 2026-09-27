@@ -47,9 +47,11 @@ struct NotchView: View {
                         .transition(NotchMotion.content(reduceMotion: reduceMotion))
                 }
             }
-            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion), value: viewModel.isTall)
             .foregroundStyle(.white)
             .clipShape(notchShape)
+            // Below the clip on purpose: `.animation` only animates what's above it. Above the clip,
+            // the clip would jump to the new size while the shape animated inside it, hiding a shrink.
+            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion), value: viewModel.isTall)
             .contextMenu { appMenu }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -98,6 +100,7 @@ struct NotchView: View {
             }
         }
         .animation(NotchMotion.earHandover(reduceMotion: reduceMotion), value: viewModel.selectedTab)
+        .environment(\.openNotchPage, OpenNotchPageAction { [viewModel] module in viewModel.select(tab: module) })
         .transition(.opacity)
     }
 
@@ -173,7 +176,7 @@ struct NotchView: View {
     private func tabPage(for module: any NotchModule) -> some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: geometry.notchRect.height)
-            AnyView(module.content(for: .expanded))
+            AnyView(module.content(for: .page))
                 .padding(.horizontal, 24)
                 .padding(.top, 2)
                 .padding(.bottom, 10)
@@ -201,7 +204,7 @@ struct NotchView: View {
 
     private var moduleColumns: some View {
         HStack(spacing: 20) {
-            let sections = viewModel.modules.filter { $0.hasExpandedSection && $0.tab == nil }
+            let sections = viewModel.modules.filter(\.hasExpandedSection)
             ForEach(sections.indices, id: \.self) { index in
                 if index > 0 {
                     Divider()

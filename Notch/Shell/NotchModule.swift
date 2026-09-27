@@ -15,6 +15,8 @@ enum NotchPlacement {
     case expanded
     /// A full-width row above the module columns in the expanded notch.
     case headline
+    /// The module's full-width page, opened from the tab bar or from the module's own UI.
+    case page
     case activityLeading
     case activityTrailing
     case activityDetail
@@ -52,6 +54,8 @@ struct NotchTab: Equatable {
         case tab
         /// An icon-only button, right of the camera (e.g. the mirror).
         case button
+        /// No button at all; opened from the module's own UI (e.g. tapping the timer on Home).
+        case page
     }
 
     let title: String

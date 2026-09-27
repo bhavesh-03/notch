@@ -5,6 +5,9 @@ import UniformTypeIdentifiers
 extension ShelfStore: NotchModule {
     var earPriority: Int? { nil }
 
+    /// Lives in its own tab rather than a Home column.
+    var hasExpandedSection: Bool { false }
+
     var tab: NotchTab? { NotchTab(title: "Files", symbol: "tray.full.fill") }
 
     var acceptsFileDrops: Bool { true }
@@ -12,9 +15,9 @@ extension ShelfStore: NotchModule {
     @ViewBuilder
     func content(for placement: NotchPlacement) -> some View {
         switch placement {
-        case .expanded:
+        case .page:
             ShelfSection(shelf: self)
-        case .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail, .headline:
+        case .expanded, .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail, .headline:
             EmptyView()
         }
     }
@@ -102,7 +105,7 @@ private struct FileTile: View {
         .frame(width: 60)
         .contentShape(Rectangle())
         .onDrag {
-            NSItemProvider(contentsOf: item.url) ?? NSItemProvider()
+            ShelfStore.dragProvider(for: item)
         } preview: {
             FileThumbnail(url: item.url)
                 .frame(width: 48, height: 48)

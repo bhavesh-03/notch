@@ -13,6 +13,12 @@ extension TimerController: NotchModule {
         state.phase == .idle ? nil : 10
     }
 
+    /// No tab-bar button: the page opens when you tap the timer on Home.
+    var tab: NotchTab? { NotchTab(title: "Timer", symbol: "timer", style: .page) }
+
+    /// Tall only while choosing a length (the ruler needs the room); a running countdown fits the normal height.
+    var wantsTallPage: Bool { state.phase == .idle }
+
     @ViewBuilder
     func content(for placement: NotchPlacement) -> some View {
         Group {
@@ -27,6 +33,8 @@ extension TimerController: NotchModule {
                     .font(.caption)
             case .expanded:
                 TimerSection(timer: self)
+            case .page:
+                TimerPage(timer: self)
             case .headline:
                 EmptyView()
             case .activityLeading:
@@ -48,13 +56,20 @@ extension TimerController: NotchModule {
 
 private struct TimerSection: View {
     let timer: TimerController
+    @Environment(\.openNotchPage) private var openPage
 
     private var isActive: Bool { timer.state.phase != .idle }
 
     var body: some View {
         VStack(spacing: 10) {
-            Countdown(timer: timer)
-                .font(.system(size: 34, weight: .semibold))
+            Button {
+                openPage(timer)
+            } label: {
+                Countdown(timer: timer)
+                    .font(.system(size: 34, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            .help("Set the timer")
             HStack(spacing: 12) {
                 Button {
                     timer.toggle()
@@ -79,7 +94,7 @@ private struct TimerSection: View {
     }
 }
 
-private struct Countdown: View {
+struct Countdown: View {
     let timer: TimerController
 
     var body: some View {
@@ -93,7 +108,7 @@ private struct Countdown: View {
     }
 
     private func text(for remaining: TimeInterval) -> some View {
-        Text(Duration.seconds(Int(remaining.rounded(.up))).formatted(.time(pattern: .minuteSecond)))
+        Text(TimerFormat.string(seconds: Int(remaining.rounded(.up))))
             .monospacedDigit()
             .contentTransition(.numericText(countsDown: true))
             .fixedSize()

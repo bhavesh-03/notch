@@ -34,7 +34,7 @@ extension NowPlayingMonitor: NotchModule {
                     .font(.caption)
                     .lineLimit(1)
                     .padding(.horizontal, 16)
-            case .expanded:
+            case .expanded, .page:
                 EmptyView()
             }
         }

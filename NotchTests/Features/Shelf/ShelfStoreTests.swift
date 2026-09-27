@@ -140,8 +140,8 @@ struct ShelfStoreTests {
 
     @Test func copiesWithTheSameNameGetNumbered() async throws {
         let shelf = store()
-        for _ in 0..<2 {
-            let provider = pngProvider(Data([1]))
+        for byte: UInt8 in [1, 2] {
+            let provider = pngProvider(Data([byte]))
             provider.suggestedName = "Shot"
             await shelf.add([provider])
         }
@@ -172,5 +172,70 @@ struct ShelfStoreTests {
 
         relaunched.removeAll()
         #expect(FileManager.default.fileExists(atPath: moved.path))
+    }
+
+    @Test func draggingAnItemOutAndBackInDoesNotDuplicateIt() async throws {
+        let shelf = store()
+        shelf.add([try file("report.txt")])
+        let item = try #require(shelf.items.first)
+
+        await shelf.add([ShelfStore.dragProvider(for: item)])
+
+        #expect(shelf.items.count == 1)
+    }
+
+    @Test func draggingAnOwnedCopyOutAndBackInDoesNotDuplicateIt() async throws {
+        let shelf = store()
+        await shelf.add([pngProvider(Data([1, 2, 3]))])
+        let copy = try #require(shelf.items.first)
+
+        await shelf.add([ShelfStore.dragProvider(for: copy)])
+
+        #expect(shelf.items.count == 1)
+    }
+
+    @Test func differentSpellingsOfOnePathAreTheSameFile() throws {
+        let a = try file("a.txt")
+        let link = folder.appendingPathComponent("link-to-a.txt")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: a)
+        #expect(ShelfStore.isSameFile(a, link))
+        let viaParent = folder.appendingPathComponent("sub/../a.txt")
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("sub"), withIntermediateDirectories: true)
+        #expect(ShelfStore.isSameFile(a, viaParent))
+        #expect(!ShelfStore.isSameFile(a, try file("b.txt")))
+
+        let shelf = store()
+        shelf.add([a])
+        #expect(!shelf.add([link]), "a symlink to a shelved file is a duplicate")
+    }
+
+    /// The real round trip: Finder copies the item to the Desktop, and that copy is dropped back.
+    @Test func aFinderCopyOfAShelvedFileIsADuplicate() async throws {
+        let original = try file("report.txt")
+        let desktopCopy = folder.appendingPathComponent("Desktop copy of report.txt")
+        try FileManager.default.copyItem(at: original, to: desktopCopy)
+
+        let shelf = store()
+        shelf.add([original])
+        await shelf.add([try #require(NSItemProvider(contentsOf: desktopCopy))])
+
+        #expect(shelf.items.map(\.name) == ["report.txt"])
+    }
+
+    @Test func droppingTheSameImageTwiceKeepsOneCopy() async throws {
+        let shelf = store()
+        await shelf.add([pngProvider(Data([1, 2, 3]))])
+        await shelf.add([pngProvider(Data([1, 2, 3]))])
+
+        #expect(shelf.items.count == 1)
+        let copies = try FileManager.default.contentsOfDirectory(atPath: copies.path)
+        #expect(copies.count == 1, "the rejected copy is cleaned up")
+    }
+
+    @Test func differentFilesOfTheSameSizeAreBothKept() {
+        let shelf = store()
+        #expect(shelf.add([try! file("ab.txt")]))
+        #expect(shelf.add([try! file("cd.txt")]))
+        #expect(shelf.items.count == 2)
     }
 }

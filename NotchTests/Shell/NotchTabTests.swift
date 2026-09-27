@@ -20,6 +20,7 @@ struct NotchTabTests {
         #expect(model.shelf.acceptsFileDrops)
         #expect(model.tabModules.filter { $0.tab?.style == .tab }.map { $0.tab?.title } == ["Files"])
         #expect(model.tabModules.filter { $0.tab?.style == .button }.map { $0.tab?.title } == ["Mirror"])
+        #expect(model.tabModules.filter { $0.tab?.style == .page }.map { $0.tab?.title } == ["Timer"])
     }
 
     @Test func theNotchOpensOnHome() {
@@ -50,8 +51,38 @@ struct NotchTabTests {
         model.expand()
         model.select(tab: model.shelf)
         model.scheduleCollapse()
-        try await Task.sleep(for: .milliseconds(500))
-        #expect(!model.isExpanded)
+        #expect(await eventually { !model.isExpanded })
         #expect(model.selectedTab == nil)
+    }
+
+    @Test func theTimerKeepsItsHomeColumnAndHasATallPage() {
+        let model = model()
+        #expect(model.timer.hasExpandedSection, "still a column on Home")
+        #expect(!model.shelf.hasExpandedSection, "Files is a tab, not a column")
+        model.select(tab: model.timer)
+        #expect(model.isTall)
+        model.timer.start()
+        #expect(!model.isTall, "the running countdown shrinks the notch")
+        model.timer.reset()
+    }
+
+    @Test func shrinkingUnderThePointerIsNotLeaving() {
+        let model = model()
+        model.expand()
+        model.select(tab: model.timer)
+        #expect(model.hoverIsTall(pointerInTallShape: true))
+        model.timer.start()
+        #expect(!model.isTall)
+        #expect(model.hoverIsTall(pointerInTallShape: true), "pointer still where the tall notch was: stay open")
+        #expect(model.hoverIsTall(pointerInTallShape: true), "no matter how long it stays there")
+        #expect(!model.hoverIsTall(pointerInTallShape: false), "moved out: normal hover")
+        #expect(!model.hoverIsTall(pointerInTallShape: true), "and moving back doesn't revive it")
+        model.timer.reset()
+    }
+
+    @Test func aNotchThatWasNeverTallHasNoGrace() {
+        let model = model()
+        model.expand()
+        #expect(!model.hoverIsTall(pointerInTallShape: true))
     }
 }

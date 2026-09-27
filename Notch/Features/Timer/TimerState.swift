@@ -15,7 +15,11 @@ struct TimerState: Equatable {
         case paused(remaining: TimeInterval)
     }
     
-    let duration: TimeInterval
+    /// Lengths are set in 15-second steps, from 15 s to 2 h.
+    static let step: TimeInterval = 15
+    static let durationRange: ClosedRange<TimeInterval> = 15...(120 * 60)
+
+    private(set) var duration: TimeInterval
     private(set) var phase: Phase = .idle
     
     init(duration: TimeInterval) {
@@ -48,6 +52,14 @@ struct TimerState: Equatable {
         phase = .paused(remaining: remaining(at: now))
     }
     
+    /// Changes the length, rounded to a 15-second step and clamped to `durationRange`.
+    /// Only while idle: a running or paused timer keeps its length.
+    mutating func setDuration(seconds: TimeInterval) {
+        guard phase == .idle else { return }
+        let stepped = (seconds / Self.step).rounded() * Self.step
+        duration = min(max(stepped, Self.durationRange.lowerBound), Self.durationRange.upperBound)
+    }
+
     mutating func reset() {
         phase = .idle
     }

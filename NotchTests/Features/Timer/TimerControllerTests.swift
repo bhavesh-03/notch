@@ -37,8 +37,7 @@ struct TimerControllerTests {
         var finished = 0
         timer.onFinish = { finished += 1 }
         timer.start()
-        try await Task.sleep(for: .milliseconds(300))
-        #expect(finished == 1)
+        #expect(await eventually { finished == 1 })
         #expect(timer.state.phase == .idle)
     }
 
@@ -85,5 +84,72 @@ struct TimerControllerTests {
         timer.onStart = { [weak timer] in wasRunning = timer?.isRunning ?? false }
         timer.start()
         #expect(wasRunning)
+    }
+
+    @Test func theRulerSetsTheLength() {
+        let timer = TimerController(duration: 25 * 60)
+        #expect(timer.duration == 25 * 60)
+        timer.setDuration(seconds: 16 * 60 + 30)
+        #expect(timer.duration == 990)
+        timer.start()
+        #expect(timer.remaining(at: .now) <= 990)
+        timer.reset()
+    }
+
+    @Test func theTimerPageOpensFromHomeRatherThanTheTabBar() {
+        let timer = TimerController()
+        #expect(timer.tab?.style == .page)
+    }
+
+    @Test func thePageIsTallOnlyWhileChoosingALength() {
+        let timer = TimerController(duration: 100)
+        #expect(timer.wantsTallPage, "idle: the ruler needs the room")
+        timer.start()
+        #expect(!timer.wantsTallPage, "running: just the countdown")
+        timer.pause()
+        #expect(!timer.wantsTallPage)
+        timer.reset()
+        #expect(timer.wantsTallPage)
+    }
+
+    @Test func zoomingInMakesAMinuteFourTimesWider() {
+        #expect(DurationRuler.pointsPerSecond(fine: true) == 4 * DurationRuler.pointsPerSecond(fine: false))
+        #expect(DurationRuler.pointsPerSecond(fine: false) * 60 == DurationRuler.tickSpacing)
+    }
+
+    @Test func normallyTheRulerSnapsToWholeMinutes() {
+        #expect(DurationRuler.snapped(16 * 60 + 25, step: 60) == 16 * 60)
+        #expect(DurationRuler.snapped(16 * 60 + 35, step: 60) == 17 * 60)
+    }
+
+    @Test func fineChoicesSnapToFifteenSeconds() {
+        #expect(DurationRuler.snapped(16 * 60 + 25, step: 15) == 16 * 60 + 30)
+        #expect(DurationRuler.snapped(16 * 60 + 5, step: 15) == 16 * 60)
+    }
+
+    @Test func aFifteenSecondValueKeepsItsPrecision() {
+        // The bug: zooming out re-snapped 16:30 to whole minutes. The step now follows the value.
+        let chosen: TimeInterval = 16 * 60 + 30
+        #expect(DurationRuler.step(for: chosen) == 15)
+        #expect(DurationRuler.snapped(chosen, step: DurationRuler.step(for: chosen)) == chosen)
+        #expect(DurationRuler.step(for: 16 * 60) == 60)
+    }
+
+    @Test func zeroIsShownButNeverChosen() {
+        #expect(DurationRuler.visibleRange.lowerBound == 0)
+        #expect(DurationRuler.snapped(0, step: 60) == 60)
+        #expect(DurationRuler.snapped(0, step: 15) == 15)
+        #expect(DurationRuler.snapped(-100, step: 15) == 15)
+    }
+
+    @Test func theRulerGoesUpToTwoHours() {
+        #expect(DurationRuler.snapped(9000, step: 60) == 7200)
+    }
+
+    @Test func pastTheEndsTheRulerMovesWithResistance() {
+        let end = DurationRuler.visibleRange.upperBound
+        #expect(DurationRuler.rubberBanded(600) == 600, "inside: unchanged")
+        #expect(DurationRuler.rubberBanded(-100) == -30)
+        #expect(DurationRuler.rubberBanded(end + 100) == end + 30)
     }
 }

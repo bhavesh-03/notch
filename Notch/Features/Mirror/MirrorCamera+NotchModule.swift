@@ -13,9 +13,9 @@ extension MirrorCamera: NotchModule {
     @ViewBuilder
     func content(for placement: NotchPlacement) -> some View {
         switch placement {
-        case .expanded:
+        case .page:
             MirrorPage(camera: self)
-        case .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail, .headline:
+        case .expanded, .leadingEar, .trailingEar, .pill, .activityLeading, .activityTrailing, .activityDetail, .headline:
             EmptyView()
         }
     }
@@ -50,6 +50,10 @@ private struct MirrorPage: View {
                 }
             } else {
                 CameraPreview(session: camera.session)
+                    // A horizontal flip, like a real mirror: your right hand appears on the right.
+                    // Done on the view rather than the capture connection, which only exists once the
+                    // session is configured (asynchronously), so setting it there could be missed.
+                    .scaleEffect(x: -1, y: 1)
                     .aspectRatio(16 / 9, contentMode: .fit)
                     .background(.white.opacity(0.06))
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -65,7 +69,7 @@ private struct MirrorPage: View {
     )!
 }
 
-/// Hosts AVFoundation's preview layer, mirrored like a real mirror.
+/// Hosts AVFoundation's preview layer. The mirroring is done by the SwiftUI view that uses it.
 private struct CameraPreview: NSViewRepresentable {
     let session: AVCaptureSession
 
@@ -89,13 +93,5 @@ private struct CameraPreview: NSViewRepresentable {
 
         required init?(coder: NSCoder) { nil }
 
-        override func layout() {
-            super.layout()
-            // The connection only exists once the session has an input, so mirror it here.
-            if let connection = previewLayer.connection, connection.isVideoMirroringSupported {
-                connection.automaticallyAdjustsVideoMirroring = false
-                connection.isVideoMirrored = true
-            }
-        }
     }
 }

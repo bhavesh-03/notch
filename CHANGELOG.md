@@ -7,10 +7,14 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 ### Added
 - **Tabs** in the expanded notch: **Home** and **Files**. The file shelf moved into the Files tab and now holds 12 files; dragging a file onto the notch opens Files automatically from any tab.
 - The app's version and build number are shown at the top of the right-click menu.
+- **Customizable timer:** tap the timer on Home to open a full-width page with a minute ruler (up to 2 hours) that follows click-drag, flicks and trackpad scrolling, snaps to whole minutes, and makes the tick under the pointer glow. Click and hold for half a second to zoom in and pick 15-second steps. Times of an hour or more show hours (1:30:00) everywhere. While running, the page shows a large countdown with pause and cancel.
 - **Mirror:** a camera button (right of the camera housing) opens a live, mirrored camera view in the notch. The camera runs only while the mirror is open; nothing is recorded or saved.
 
 ### Changed
 - Page height changes (switching tabs, the player row appearing or leaving) use a slower, softer spring.
+
+### Fixed
+- Dragging a file out of the shelf and dropping it back no longer adds it twice; the shelf recognizes the same file, including a copy Finder made of it.
 
 ## 1.0.0 — 2026-09-27
 

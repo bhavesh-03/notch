@@ -84,4 +84,39 @@ struct TimerStateTests {
         #expect(timer.phase == .idle)
         #expect(timer.remaining(at: start + 120) == duration)
     }
+
+    @Test func durationCanBeChangedWhileIdle() {
+        var timer = TimerState(duration: duration)
+        timer.setDuration(seconds: 16 * 60 + 30)
+        #expect(timer.duration == 16 * 60 + 30)
+        #expect(timer.remaining(at: start) == 16 * 60 + 30)
+    }
+
+    @Test(arguments: [(0.0, 15.0), (-60.0, 15.0), (7, 15), (22, 15), (23, 30), (7200, 7200), (9000, 7200), (990, 990)])
+    func durationIsSteppedAndClamped(requested: TimeInterval, expected: TimeInterval) {
+        var timer = TimerState(duration: duration)
+        timer.setDuration(seconds: requested)
+        #expect(timer.duration == expected)
+    }
+
+    @Test func aRunningOrPausedTimerKeepsItsLength() {
+        var timer = TimerState(duration: duration)
+        timer.start(at: start)
+        timer.setDuration(seconds: 300)
+        #expect(timer.duration == duration)
+        timer.pause(at: start + 60)
+        timer.setDuration(seconds: 300)
+        #expect(timer.duration == duration)
+        timer.reset()
+        timer.setDuration(seconds: 300)
+        #expect(timer.duration == 300)
+    }
+}
+
+@MainActor
+struct TimerFormatTests {
+    @Test(arguments: [(0, "0:00"), (15, "0:15"), (990, "16:30"), (3599, "59:59"), (3600, "1:00:00"), (5430, "1:30:30"), (7200, "2:00:00")])
+    func formatsMinutesUnderAnHourAndHoursAbove(seconds: Int, text: String) {
+        #expect(TimerFormat.string(seconds: seconds) == text)
+    }
 }
