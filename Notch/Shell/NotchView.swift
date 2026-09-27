@@ -56,6 +56,7 @@ struct NotchView: View {
             .animation(NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.isTall)
             .animation(NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.settings.cornerRadius)
             .environment(\.notchAccent, viewModel.settings.accent.color)
+            .environment(\.timerPresets, viewModel.settings.showsTimerPresets ? viewModel.settings.timerPresets.map { $0 * 60 } : [])
             .contextMenu { appMenu }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }

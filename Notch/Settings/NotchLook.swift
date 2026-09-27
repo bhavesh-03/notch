@@ -50,4 +50,6 @@ enum NotchAccent: String, CaseIterable, Identifiable {
 extension EnvironmentValues {
     /// The user's accent, set once at the top of the notch so any feature's view can read it.
     @Entry var notchAccent: Color = NotchAccent.orange.color
+    /// The timer page's preset chips, in seconds; empty when the user turned them off.
+    @Entry var timerPresets: [TimeInterval] = []
 }

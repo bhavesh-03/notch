@@ -6,6 +6,7 @@ struct TimerPage: View {
     let timer: TimerController
 
     @Environment(\.notchAccent) private var accent
+    @Environment(\.timerPresets) private var presets
 
     var body: some View {
         Group {
@@ -33,6 +34,8 @@ struct TimerPage: View {
                 } label: {
                     Text("Start Timer")
                         .font(.system(size: 15, weight: .semibold))
+                        .lineLimit(1)
+                        .fixedSize()
                         .foregroundStyle(accent)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 9)
@@ -41,10 +44,22 @@ struct TimerPage: View {
                 }
                 .buttonStyle(.plain)
 
-                Spacer()
+                // The chips give way first when space is short (a narrow notch, an hour-long time):
+                // ViewThatFits shows the first layout that fits, so 4 chips, then 3, 2, or none.
+                ViewThatFits(in: .horizontal) {
+                    ForEach([4, 3, 2], id: \.self) { count in
+                        HStack(spacing: 0) {
+                            Spacer(minLength: 12)
+                            presetChips(count: count)
+                            Spacer(minLength: 12)
+                        }
+                    }
+                    Spacer(minLength: 12)
+                }
 
                 Text(TimerFormat.string(seconds: Int(timer.duration)))
                     .font(.system(size: 40, weight: .light))
+                    .fixedSize()
                     .monospacedDigit()
                     .foregroundStyle(accent)
                     .contentTransition(.numericText())
@@ -52,6 +67,38 @@ struct TimerPage: View {
             }
         }
         .transition(.opacity)
+    }
+
+    /// One-tap lengths between "Start Timer" and the time. Tapping one moves the ruler to it.
+    private func presetChips(count: Int) -> some View {
+        HStack(spacing: 6) {
+            ForEach(Array(presets.prefix(count).enumerated()), id: \.offset) { _, seconds in
+                let isCurrent = timer.duration == seconds
+                Button {
+                    timer.setDuration(seconds: seconds)
+                } label: {
+                    Text(Self.chipTitle(seconds: seconds))
+                        .font(.system(size: 12, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(isCurrent ? .black : accent)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(isCurrent ? accent : accent.opacity(0.14), in: Capsule())
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .animation(.snappy, value: isCurrent)
+            }
+        }
+        .fixedSize()
+    }
+
+    /// "5m", "45m", "1h", "1h30".
+    static func chipTitle(seconds: TimeInterval) -> String {
+        let minutes = Int(seconds / 60)
+        guard minutes >= 60 else { return "\(minutes)m" }
+        let rest = minutes % 60
+        return rest == 0 ? "\(minutes / 60)h" : "\(minutes / 60)h\(String(format: "%02d", rest))"
     }
 
     /// Mirrors the picker: controls on the left where "Start Timer" was, the time on the right where it was chosen.

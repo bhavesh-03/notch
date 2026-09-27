@@ -8,4 +8,12 @@ enum TimerFormat {
             ? duration.formatted(.time(pattern: .hourMinuteSecond))
             : duration.formatted(.time(pattern: .minuteSecond))
     }
+
+    /// The length in words, for sentences: "25 minutes", "30 seconds", "1 hour, 30 minutes".
+    static func spoken(seconds: Int) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .full
+        formatter.allowedUnits = [.hour, .minute, .second]
+        return formatter.string(from: TimeInterval(max(0, seconds))) ?? "\(seconds) seconds"
+    }
 }

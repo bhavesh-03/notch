@@ -13,6 +13,10 @@ final class TimerController {
     private(set) var state: TimerState
     @ObservationIgnored var onStart: (() -> Void)?
     @ObservationIgnored var onFinish: (() -> Void)?
+    /// Called when the length actually changes (not for a value that rounds to the current one).
+    @ObservationIgnored var onDurationChanged: ((TimeInterval) -> Void)?
+    /// A length chosen while a timer runs; it takes effect once that timer finishes or is cancelled.
+    @ObservationIgnored private var pendingDuration: TimeInterval?
     @ObservationIgnored private var finishTask: Task<Void, Never>?
     @ObservationIgnored private let now: () -> Date
     
@@ -44,13 +48,29 @@ final class TimerController {
     func reset() {
         state.reset()
         cancelFinish()
+        applyPendingDuration()
     }
     
     /// The length the timer is set to, in seconds.
     var duration: TimeInterval { state.duration }
 
+    /// Sets the length. While a timer runs or is paused it keeps its length, so the new one waits.
     func setDuration(seconds: TimeInterval) {
+        guard state.phase == .idle else {
+            pendingDuration = seconds
+            return
+        }
+        pendingDuration = nil
+        let old = state.duration
         state.setDuration(seconds: seconds)
+        if state.duration != old {
+            onDurationChanged?(state.duration)
+        }
+    }
+
+    private func applyPendingDuration() {
+        guard let pending = pendingDuration else { return }
+        setDuration(seconds: pending)
     }
 
     func toggle() {
@@ -77,6 +97,7 @@ final class TimerController {
     private func finish() {
         finishTask = nil
         state.reset()
+        applyPendingDuration()
         onFinish?()
     }
 }

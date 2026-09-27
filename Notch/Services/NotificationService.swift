@@ -22,14 +22,20 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         _ = try? await center.requestAuthorization(options: [.alert, .sound])
     }
 
-    func postTimerFinished(duration: TimeInterval) {
+    func postTimerFinished(duration: TimeInterval, playsSound: Bool) {
         let content = UNMutableNotificationContent()
         content.title = "Time's up"
-        content.body = "Your \(Int(duration / 60))-minute session is done."
-        content.sound = .default
+        content.body = Self.timerFinishedBody(duration: duration)
+        content.sound = playsSound ? .default : nil
 
         let request = UNNotificationRequest(identifier: "timer-finished", content: content, trigger: nil)
         center.add(request)
+    }
+
+    /// "Your 25-minute timer is done" read wrong for short and long timers ("0-minute"), so the
+    /// length is spelled out: "Your timer for 30 seconds is done."
+    static func timerFinishedBody(duration: TimeInterval) -> String {
+        "Your timer for \(TimerFormat.spoken(seconds: Int(duration.rounded()))) is done."
     }
 
     nonisolated func userNotificationCenter(

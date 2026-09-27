@@ -46,6 +46,33 @@ final class NotchSettings {
     /// a pop-up in a later version starts with it on.
     private(set) var mutedPopUps: Set<NotchFeature>
 
+    /// The timer's length in seconds: set here or with the timer page's ruler, and kept across launches.
+    var timerLength: Double {
+        didSet {
+            let clamped = timerLength.clamped(to: TimerState.durationRange)
+            if timerLength != clamped { timerLength = clamped; return }
+            save(timerLength, Keys.timerLength)
+            if timerLength != oldValue { onTimerLengthChanged?(timerLength) }
+        }
+    }
+    /// Lengths offered as one-tap chips on the timer page, in minutes.
+    private(set) var timerPresets: [Double]
+    var showsTimerPresets: Bool {
+        didSet { save(showsTimerPresets, Keys.showsTimerPresets) }
+    }
+    var timerNotifies: Bool {
+        didSet { save(timerNotifies, Keys.timerNotifies) }
+    }
+    var timerPlaysSound: Bool {
+        didSet { save(timerPlaysSound, Keys.timerPlaysSound) }
+    }
+
+    static let defaultTimerLength: Double = 25 * 60
+    static let defaultTimerPresets: [Double] = [5, 10, 25, 45]
+    static let presetRange: ClosedRange<Double> = 1...120
+
+    @ObservationIgnored var onTimerLengthChanged: ((Double) -> Void)?
+
     static let hoverDelayRange: ClosedRange<Double> = 0...1
     static let defaultCornerRadius: Double = 24
     static let cornerRadiusRange: ClosedRange<Double> = 12...32
@@ -70,6 +97,11 @@ final class NotchSettings {
         hoverDelay = (defaults.object(forKey: Keys.hoverDelay) as? Double)?.clamped(to: Self.hoverDelayRange) ?? 0
         animationSpeed = defaults.string(forKey: Keys.animationSpeed).flatMap(AnimationSpeed.init(rawValue:)) ?? .standard
         mutedPopUps = Set(Self.features(forKey: Keys.mutedPopUps, in: defaults))
+        timerLength = (defaults.object(forKey: Keys.timerLength) as? Double)?.clamped(to: TimerState.durationRange) ?? Self.defaultTimerLength
+        timerPresets = Self.normalized(presets: defaults.array(forKey: Keys.timerPresets) as? [Double])
+        showsTimerPresets = defaults.object(forKey: Keys.showsTimerPresets) as? Bool ?? true
+        timerNotifies = defaults.object(forKey: Keys.timerNotifies) as? Bool ?? true
+        timerPlaysSound = defaults.object(forKey: Keys.timerPlaysSound) as? Bool ?? true
     }
 
     /// Settings kept in a throwaway domain, for tests and previews, so they never read or change the
@@ -152,6 +184,30 @@ final class NotchSettings {
         save([String](), Keys.mutedPopUps)
     }
 
+    // MARK: - Timer
+
+    /// Sets one of the preset chips, in minutes (whole minutes, 1 to 120).
+    func setTimerPreset(at index: Int, minutes: Double) {
+        guard timerPresets.indices.contains(index) else { return }
+        timerPresets[index] = minutes.rounded().clamped(to: Self.presetRange)
+        save(timerPresets, Keys.timerPresets)
+    }
+
+    func resetTimer() {
+        timerLength = Self.defaultTimerLength
+        timerPresets = Self.defaultTimerPresets
+        save(timerPresets, Keys.timerPresets)
+        showsTimerPresets = true
+        timerNotifies = true
+        timerPlaysSound = true
+    }
+
+    /// Always four presets in range; anything else saved falls back to the defaults.
+    static func normalized(presets: [Double]?) -> [Double] {
+        guard let presets, presets.count == defaultTimerPresets.count else { return defaultTimerPresets }
+        return presets.map { $0.rounded().clamped(to: presetRange) }
+    }
+
     // MARK: - Storage
 
     private enum Keys {
@@ -164,6 +220,11 @@ final class NotchSettings {
         static let hoverDelay = "settings.hoverDelaySeconds"
         static let animationSpeed = "settings.animationSpeed"
         static let mutedPopUps = "settings.mutedPopUps"
+        static let timerLength = "settings.timerLength"
+        static let timerPresets = "settings.timerPresets"
+        static let showsTimerPresets = "settings.showsTimerPresets"
+        static let timerNotifies = "settings.timerNotifies"
+        static let timerPlaysSound = "settings.timerPlaysSound"
     }
 
     private func save(_ value: Any, _ key: String) {

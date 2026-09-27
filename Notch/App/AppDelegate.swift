@@ -41,12 +41,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.panel = panel
         
         let timer = viewModel.timer
-        timer.onStart = { [notifications] in
+        timer.onStart = { [notifications, settings] in
+            guard settings.timerNotifies else { return }
             Task { await notifications.requestAuthorizationIfNeeded() }
         }
-        timer.onFinish = { [notifications, weak timer, weak viewModel] in
+        timer.onFinish = { [notifications, settings, weak timer, weak viewModel] in
             guard let timer else { return }
-            notifications.postTimerFinished(duration: timer.state.duration)
+            if settings.timerNotifies {
+                notifications.postTimerFinished(duration: timer.state.duration, playsSound: settings.timerPlaysSound)
+            }
             viewModel?.showActivity(from: timer)
         }
 

@@ -12,12 +12,14 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 - **Settings window** (right-click the expanded notch → Settings…), laid out like System Settings with toolbar tabs. **Features:** show or hide each feature and drag to reorder them; hidden features leave the ears, Home, the tabs and pop-ups, and Now Playing stops its helper process while hidden.
 - **Look settings:** notch width (Compact, Standard, Wide), corner roundness, an accent color for the timer and playback progress, and whether the collapsed notch shows ears. A live preview follows your changes.
 - **Behavior settings:** a hover delay slider (0–1 s) before the notch opens (file drags still open it instantly), an on/off switch for each pop-up (charger, timer finished, meeting starting, new track), and an animation speed for the notch's motion.
+- **Timer settings:** the timer's length is remembered across launches (set with the ruler or in Settings), four editable preset chips on the timer page, and switches for the finish notification and its sound.
 
 ### Changed
 - Page height changes (switching tabs, the player row appearing or leaving) use a slower, softer spring.
 - Now Playing steps out of the ears, and skips the new-track pop-up, while you're in the app that's playing. The player row in the expanded notch stays.
 
 ### Fixed
+- The timer's notification described short timers as a "0-minute session"; it now spells out the length ("Your timer for 30 seconds is done.").
 - Dragging a file out of the shelf and dropping it back no longer adds it twice; the shelf recognizes the same file, including a copy Finder made of it.
 
 ## 1.0.0 — 2026-09-27

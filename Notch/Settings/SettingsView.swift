@@ -4,13 +4,14 @@ import SwiftUI
 /// left, controls on the right, explanations under each section. The window shows them as toolbar
 /// tabs (see `SettingsWindowController`).
 enum SettingsTab: CaseIterable {
-    case features, look, behavior
+    case features, look, behavior, timer
 
     var title: String {
         switch self {
         case .features: "Features"
         case .look: "Look"
         case .behavior: "Behavior"
+        case .timer: "Timer"
         }
     }
 
@@ -19,6 +20,7 @@ enum SettingsTab: CaseIterable {
         case .features: "square.grid.2x2"
         case .look: "paintbrush"
         case .behavior: "cursorarrow.motionlines"
+        case .timer: "timer"
         }
     }
 
@@ -28,6 +30,7 @@ enum SettingsTab: CaseIterable {
         case .features: CGSize(width: 500, height: 456)
         case .look: CGSize(width: 500, height: 440)
         case .behavior: CGSize(width: 500, height: 492)
+        case .timer: CGSize(width: 500, height: 568)
         }
     }
 
@@ -38,6 +41,7 @@ enum SettingsTab: CaseIterable {
             case .features: FeaturesSettings(settings: settings)
             case .look: LookSettings(settings: settings)
             case .behavior: BehaviorSettings(settings: settings)
+            case .timer: TimerSettings(settings: settings)
             }
         }
         .formStyle(.grouped)
@@ -170,6 +174,58 @@ struct BehaviorSettings: View {
             }
 
             ResetSection { settings.resetBehavior() }
+        }
+    }
+}
+
+/// The timer's length, preset chips, and its notification.
+struct TimerSettings: View {
+    @Bindable var settings: NotchSettings
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Length") {
+                    Stepper(value: $settings.timerLength, in: TimerState.durationRange, step: 60) {
+                        Text(TimerFormat.string(seconds: Int(settings.timerLength)))
+                            .monospacedDigit()
+                            .frame(minWidth: 64, alignment: .trailing)
+                    }
+                }
+            } footer: {
+                Text("The ruler on the timer page sets this too. The last length you pick is kept when the app restarts.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Show presets on the timer page", isOn: $settings.showsTimerPresets)
+                ForEach(settings.timerPresets.indices, id: \.self) { index in
+                    LabeledContent("Preset \(index + 1)") {
+                        Stepper(value: Binding(
+                            get: { settings.timerPresets[index] },
+                            set: { settings.setTimerPreset(at: index, minutes: $0) }
+                        ), in: NotchSettings.presetRange, step: 1) {
+                            Text("\(Int(settings.timerPresets[index])) min")
+                                .monospacedDigit()
+                                .frame(minWidth: 64, alignment: .trailing)
+                        }
+                    }
+                    .disabled(!settings.showsTimerPresets)
+                }
+            } header: {
+                Text("Presets")
+            }
+
+            Section {
+                Toggle("Notify when a timer finishes", isOn: $settings.timerNotifies)
+                Toggle("Play a sound", isOn: $settings.timerPlaysSound)
+                    .disabled(!settings.timerNotifies)
+            } footer: {
+                Text("The notification also appears in Notification Center. The notch's own pop-up is under Behavior.")
+                    .foregroundStyle(.secondary)
+            }
+
+            ResetSection { settings.resetTimer() }
         }
     }
 }

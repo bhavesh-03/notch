@@ -32,7 +32,7 @@ final class NotchViewModel {
     @ObservationIgnored private var isHeldOpen = false
     var geometry: NotchGeometry
     let battery = BatteryMonitor()
-    let timer = TimerController()
+    let timer: TimerController
     let calendar = CalendarMonitor()
     let shelf = ShelfStore()
     let nowPlaying = NowPlayingMonitor()
@@ -104,6 +104,19 @@ final class NotchViewModel {
         self.geometry = geometry
         self.settings = settings
         self.reduceMotion = reduceMotion
+        timer = TimerController(duration: settings.timerLength)
+        syncTimerLength()
+    }
+
+    /// The ruler and Settings edit the same length. Each side only reports a real change, so an
+    /// update goes around once and stops (ruler → settings → timer: already that length, no report).
+    private func syncTimerLength() {
+        timer.onDurationChanged = { [settings] seconds in
+            settings.timerLength = seconds
+        }
+        settings.onTimerLengthChanged = { [timer] seconds in
+            timer.setDuration(seconds: seconds)
+        }
     }
 
     /// Springs normally; a short, bounce-free ease when the user has asked for less motion.
