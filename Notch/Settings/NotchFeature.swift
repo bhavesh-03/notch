@@ -12,6 +12,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
     case mirror
     case systemStats
     case levels
+    case devices
 
     var id: String { rawValue }
 
@@ -25,6 +26,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .mirror: "Mirror"
         case .systemStats: "System Stats"
         case .levels: "Volume & Brightness"
+        case .devices: "Devices"
         }
     }
 
@@ -38,6 +40,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .mirror: "web.camera"
         case .systemStats: "gauge.with.dots.needle.33percent"
         case .levels: "speaker.wave.2.fill"
+        case .devices: "airpods.pro"
         }
     }
 
@@ -51,6 +54,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .mirror: "A live camera view, from a button beside the camera"
         case .systemStats: "CPU, GPU, memory and temperature widgets for Home"
         case .levels: "Shows volume and brightness in the notch instead of macOS's indicator"
+        case .devices: "AirPods and other Bluetooth devices: a pop-up when they connect, and batteries"
         }
     }
 }

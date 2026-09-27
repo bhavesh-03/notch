@@ -66,6 +66,8 @@ struct HomeWidgetView: View {
         case .calendar: CalendarWidget(calendar: viewModel.calendar, size: size)
         case .cpu, .gpu, .memory, .temperature:
             StatsWidget(kind: kind, size: size, monitor: viewModel.stats)
+        case .devices:
+            DevicesWidget(monitor: viewModel.bluetooth, size: size)
         }
     }
 }

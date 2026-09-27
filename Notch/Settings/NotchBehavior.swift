@@ -35,6 +35,7 @@ extension NotchFeature {
         case .timer: "Timer finished"
         case .calendar: "Meeting starting"
         case .nowPlaying: "New track"
+        case .devices: "Device connected"
         case .files, .mirror, .systemStats, .levels: nil
         }
     }

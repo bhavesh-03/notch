@@ -70,6 +70,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel.onOpenSettings = { [weak self] in
             self?.settingsWindow.show()
         }
+        viewModel.bluetooth.onConnected = { [weak viewModel] _ in
+            guard let viewModel else { return }
+            // Longer than other pop-ups: the batteries arrive a moment after the connection.
+            viewModel.showActivity(from: viewModel.bluetooth, for: .seconds(4))
+        }
         viewModel.levels.onShow = { [weak viewModel] in
             viewModel?.showLevels()
         }
@@ -140,6 +145,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             viewModel.nowPlaying.start()   // no-op when already running
         } else {
             viewModel.nowPlaying.stop()    // ends the helper process
+        }
+        if settings.isVisible(.devices) {
+            viewModel.bluetooth.start()    // macOS asks for Bluetooth permission the first time
+        } else {
+            viewModel.bluetooth.stop()
         }
         if settings.isVisible(.levels) {
             startMediaKeys()

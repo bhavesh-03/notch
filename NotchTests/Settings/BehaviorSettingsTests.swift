@@ -39,7 +39,7 @@ struct BehaviorSettingsTests {
     }
 
     @Test func onlyFeaturesWithAPopUpAreListed() {
-        #expect(NotchFeature.withPopUps == [.battery, .timer, .calendar, .nowPlaying])
+        #expect(NotchFeature.withPopUps == [.battery, .timer, .calendar, .nowPlaying, .devices])
     }
 
     @Test(arguments: [(-1.0, 0.0), (5.0, 1.0), (0.45, 0.45)])
