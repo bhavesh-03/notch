@@ -169,7 +169,10 @@ final class ShelfStore {
 
     // MARK: - Persistence
 
-    static let defaultCopiesFolder = URL.applicationSupportDirectory.appendingPathComponent("Shelf", isDirectory: true)
+    /// In the app's own folder: unsandboxed, Application Support is shared by every app.
+    static let defaultCopiesFolder = URL.applicationSupportDirectory
+        .appendingPathComponent(Bundle.main.bundleIdentifier ?? "com.vinzi.Notch", isDirectory: true)
+        .appendingPathComponent("Shelf", isDirectory: true)
 
     private static let bookmarkOptions: URL.BookmarkCreationOptions = [.withSecurityScope, .securityScopeAllowOnlyReadAccess]
     private static let storageKey = "shelf.items"

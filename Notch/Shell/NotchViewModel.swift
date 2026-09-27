@@ -40,6 +40,7 @@ final class NotchViewModel {
     let nowPlaying = NowPlayingMonitor()
     let mirror = MirrorCamera()
     let stats = SystemStatsMonitor()
+    let levels = LevelIndicator()
     let launchAtLogin = LaunchAtLogin()
     let settings: NotchSettings
 
@@ -88,7 +89,7 @@ final class NotchViewModel {
         select(tab: target)
     }
     /// Every module, whether or not the user shows it.
-    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, mirror, stats] }
+    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, mirror, stats, levels] }
 
     /// Home's widgets in the user's order and sizes, minus those whose feature is hidden.
     var homeWidgets: [HomeWidget] {
@@ -215,6 +216,27 @@ final class NotchViewModel {
                 keepsTallHover = false
             }
             collapseTask = nil
+        }
+    }
+
+    /// The volume/brightness indicator is showing over the open notch.
+    private(set) var showsLevelsOverExpanded = false
+    @ObservationIgnored private var levelsTask: Task<Void, Never>?
+
+    /// Shows the volume/brightness indicator: as a pop-up when the notch is closed, or as a bar
+    /// along the bottom of the open notch (a pop-up would close it).
+    func showLevels() {
+        guard settings.isVisible(.levels) else { return }
+        guard isExpanded else {
+            showActivity(from: levels, for: .seconds(1.5))
+            return
+        }
+        showsLevelsOverExpanded = true
+        levelsTask?.cancel()
+        levelsTask = Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            showsLevelsOverExpanded = false
         }
     }
 

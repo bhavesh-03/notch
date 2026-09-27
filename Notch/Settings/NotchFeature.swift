@@ -11,6 +11,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
     case nowPlaying
     case mirror
     case systemStats
+    case levels
 
     var id: String { rawValue }
 
@@ -23,6 +24,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .nowPlaying: "Now Playing"
         case .mirror: "Mirror"
         case .systemStats: "System Stats"
+        case .levels: "Volume & Brightness"
         }
     }
 
@@ -35,6 +37,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .nowPlaying: "play.fill"
         case .mirror: "web.camera"
         case .systemStats: "gauge.with.dots.needle.33percent"
+        case .levels: "speaker.wave.2.fill"
         }
     }
 
@@ -47,6 +50,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .nowPlaying: "What's playing in any app, with controls"
         case .mirror: "A live camera view, from a button beside the camera"
         case .systemStats: "CPU, GPU, memory and temperature widgets for Home"
+        case .levels: "Shows volume and brightness in the notch instead of macOS's indicator"
         }
     }
 }

@@ -12,13 +12,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private var panel: NotchPanel?
     private var viewModel: NotchViewModel?
-    private let settings = NotchSettings()
+    private let settings: NotchSettings
+    private let mediaKeys = MediaKeyTap()
+    private var accessibilityWait: Task<Void, Never>?
     private lazy var settingsWindow = SettingsWindowController(settings: settings)
     private var monitors: [Any] = []
     private var screenChangeTask: Task<Void, Never>?
     private var menuTrackingTasks: [Task<Void, Never>] = []
     private var dragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
     private let notifications = NotificationService()
+
+    override init() {
+        // Before the settings load, so they load what the sandboxed version saved.
+        SandboxMigration.runIfNeeded()
+        settings = NotchSettings()
+        super.init()
+    }
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         
@@ -61,6 +70,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel.onOpenSettings = { [weak self] in
             self?.settingsWindow.show()
         }
+        viewModel.levels.onShow = { [weak viewModel] in
+            viewModel?.showLevels()
+        }
+        mediaKeys.onKey = { [weak viewModel] key, fine in
+            viewModel?.levels.handle(key, fine: fine) ?? false
+        }
+
         settings.onGeometryChanged = { [weak self] in
             self?.updateGeometry()
         }
@@ -124,6 +140,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             viewModel.nowPlaying.start()   // no-op when already running
         } else {
             viewModel.nowPlaying.stop()    // ends the helper process
+        }
+        if settings.isVisible(.levels) {
+            startMediaKeys()
+        } else {
+            accessibilityWait?.cancel()
+            mediaKeys.stop()               // the keys go back to macOS
+        }
+    }
+
+    /// Takes over the volume and brightness keys, asking for Accessibility permission first if needed
+    /// and starting as soon as it's granted (no relaunch).
+    private func startMediaKeys() {
+        guard !mediaKeys.isRunning else { return }
+        if MediaKeyTap.isTrusted {
+            mediaKeys.start()
+            return
+        }
+        MediaKeyTap.requestTrust()
+        accessibilityWait?.cancel()
+        accessibilityWait = Task { [weak self] in
+            while !Task.isCancelled, !MediaKeyTap.isTrusted {
+                try? await Task.sleep(for: .seconds(2))
+            }
+            guard !Task.isCancelled else { return }
+            self?.mediaKeys.start()
         }
     }
 

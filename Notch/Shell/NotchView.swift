@@ -127,7 +127,34 @@ struct NotchView: View {
         }
         .animation(NotchMotion.earHandover(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.selectedTab)
         .environment(\.openNotchPage, OpenNotchPageAction { [viewModel] module in viewModel.select(tab: module) })
+        .overlay(alignment: .bottom) {
+            if viewModel.showsLevelsOverExpanded {
+                levelsOverlay
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.snappy, value: viewModel.showsLevelsOverExpanded)
         .transition(.opacity)
+    }
+
+    /// Volume or brightness along the bottom of the open notch.
+    private var levelsOverlay: some View {
+        let levels = viewModel.levels
+        return HStack(spacing: 10) {
+            Image(systemName: levels.symbol)
+                .frame(width: 20)
+                .contentTransition(.symbolEffect(.replace))
+            LevelBar(level: levels.isMuted ? 0 : levels.level)
+            Text(levels.percentText)
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .frame(width: 44, alignment: .trailing)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .glassControl(in: Capsule(), interactive: false)
+        .padding(.horizontal, 40)
+        .padding(.bottom, 10)
     }
 
     private var homeColumns: Int {
