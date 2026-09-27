@@ -33,6 +33,19 @@ protocol NotchModule: AnyObject {
 
     /// Whether the module wants the full-width headline row right now.
     var hasHeadline: Bool { get }
+
+    /// A module with a tab gets its own page in the expanded notch (its `.expanded` content)
+    /// instead of a column on Home.
+    var tab: NotchTab? { get }
+
+    /// Whether files dragged onto the notch should go to this module's tab.
+    var acceptsFileDrops: Bool { get }
+}
+
+/// A tab in the expanded notch's tab bar.
+struct NotchTab: Equatable {
+    let title: String
+    let symbol: String
 }
 
 extension NotchModule {
@@ -41,6 +54,10 @@ extension NotchModule {
 
     /// Only a module with something big to show (like a media player) claims the headline.
     var hasHeadline: Bool { false }
+
+    var tab: NotchTab? { nil }
+
+    var acceptsFileDrops: Bool { false }
 }
 extension Array where Element == any NotchModule {
     /// The module that should occupy the collapsed ears: the highest `earPriority`, ignoring modules that return nil.

@@ -37,6 +37,28 @@ final class NotchViewModel {
     let nowPlaying = NowPlayingMonitor()
     let launchAtLogin = LaunchAtLogin()
     var hasHeadline: Bool { modules.headliner != nil }
+
+    /// The module whose tab is open, or nil for Home.
+    private(set) var selectedTab: ObjectIdentifier?
+
+    var tabModules: [any NotchModule] { modules.filter { $0.tab != nil } }
+
+    var selectedTabModule: (any NotchModule)? {
+        tabModules.first { ObjectIdentifier($0) == selectedTab }
+    }
+
+    /// The headline (media player) belongs to Home only.
+    var showsHeadline: Bool { selectedTab == nil && hasHeadline }
+
+    func select(tab module: (any NotchModule)?) {
+        selectedTab = module.map { ObjectIdentifier($0) }
+    }
+
+    /// A file is being dragged onto the notch: open whichever tab takes file drops.
+    func showDropTarget() {
+        guard let target = tabModules.first(where: { $0.acceptsFileDrops }) else { return }
+        select(tab: target)
+    }
     var modules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying] }
 
     @ObservationIgnored private let reduceMotion: () -> Bool
@@ -90,6 +112,7 @@ final class NotchViewModel {
 
             withAnimation(.snappy) {
                 presentation = .collapsed
+                selectedTab = nil
             }
             collapseTask = nil
         }
@@ -110,6 +133,7 @@ final class NotchViewModel {
             if case .activity = presentation {
                 withAnimation(activityCloseAnimation) {
                     presentation = .collapsed
+                    selectedTab = nil
                 }
             }
             activityTask = nil

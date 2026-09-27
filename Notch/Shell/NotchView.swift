@@ -12,7 +12,7 @@ struct NotchView: View {
     private var size: CGSize {
         switch viewModel.presentation {
         case .collapsed: geometry.collapsedRect.size
-        case .expanded: NotchGeometry.expandedSize(withHeadline: viewModel.hasHeadline)
+        case .expanded: NotchGeometry.expandedSize(withHeadline: viewModel.showsHeadline)
         case .activity: geometry.activitySize
         }
     }
@@ -47,7 +47,7 @@ struct NotchView: View {
                         .transition(NotchMotion.content(reduceMotion: reduceMotion))
                 }
             }
-            .animation(NotchMotion.activityOpen(reduceMotion: reduceMotion), value: viewModel.hasHeadline)
+            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion), value: viewModel.showsHeadline)
             .foregroundStyle(.white)
             .clipShape(notchShape)
             .contextMenu { appMenu }
@@ -82,6 +82,69 @@ struct NotchView: View {
     }
 
     private var expandedContent: some View {
+        ZStack(alignment: .top) {
+            Group {
+                if let tabModule = viewModel.selectedTabModule {
+                    tabPage(for: tabModule)
+                } else {
+                    homePage
+                }
+            }
+            .id(viewModel.selectedTab)
+            .transition(NotchMotion.earContent(reduceMotion: reduceMotion))
+
+            if !viewModel.tabModules.isEmpty {
+                tabBar
+            }
+        }
+        .animation(NotchMotion.earHandover(reduceMotion: reduceMotion), value: viewModel.selectedTab)
+        .transition(.opacity)
+    }
+
+    /// Home and one button per module tab, in the space beside the camera.
+    private var tabBar: some View {
+        HStack(spacing: 4) {
+            tabButton(title: "Home", symbol: "house.fill", module: nil)
+            ForEach(viewModel.tabModules.indices, id: \.self) { index in
+                let module = viewModel.tabModules[index]
+                if let tab = module.tab {
+                    tabButton(title: tab.title, symbol: tab.symbol, module: module)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .frame(height: geometry.notchRect.height)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 22)
+    }
+
+    private func tabButton(title: String, symbol: String, module: (any NotchModule)?) -> some View {
+        let isSelected = viewModel.selectedTab == module.map { ObjectIdentifier($0) }
+        return Button {
+            viewModel.select(tab: module)
+        } label: {
+            Label(title, systemImage: symbol)
+                .font(.caption.weight(.medium))
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4)
+                .background(isSelected ? .white.opacity(0.18) : .clear, in: Capsule())
+                .foregroundStyle(.white.opacity(isSelected ? 1 : 0.55))
+                .contentShape(Capsule())
+        }
+    }
+
+    private func tabPage(for module: any NotchModule) -> some View {
+        VStack(spacing: 0) {
+            Color.clear.frame(height: geometry.notchRect.height)
+            AnyView(module.content(for: .expanded))
+                .padding(.horizontal, 24)
+                .padding(.top, 2)
+                .padding(.bottom, 10)
+                .frame(maxHeight: .infinity)
+        }
+    }
+
+    private var homePage: some View {
         VStack(spacing: 0) {
             if let headliner = viewModel.modules.headliner {
                 // Clear of the camera band, then the full-width row, then the usual columns.
@@ -97,12 +160,11 @@ struct NotchView: View {
             moduleColumns
                 .frame(maxHeight: .infinity)
         }
-        .transition(.opacity)
     }
 
     private var moduleColumns: some View {
         HStack(spacing: 20) {
-            let sections = viewModel.modules.filter(\.hasExpandedSection)
+            let sections = viewModel.modules.filter { $0.hasExpandedSection && $0.tab == nil }
             ForEach(sections.indices, id: \.self) { index in
                 if index > 0 {
                     Divider()

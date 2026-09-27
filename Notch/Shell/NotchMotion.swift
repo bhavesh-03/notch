@@ -13,6 +13,12 @@ enum NotchMotion {
         reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.65, bounce: 0.32)
     }
 
+    /// The expanded notch changing height (switching tabs, the player row appearing or leaving).
+    /// Slower than an activity so a shrink never snaps, with a softer bounce as it settles.
+    static func pageResize(reduceMotion: Bool) -> Animation {
+        reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.9, bounce: 0.3)
+    }
+
     /// The ears changing owner (e.g. music paused, battery takes over). No shape change, so no spring needed.
     static func earHandover(reduceMotion: Bool) -> Animation {
         reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.85)

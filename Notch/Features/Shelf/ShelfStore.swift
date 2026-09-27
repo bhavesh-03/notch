@@ -20,7 +20,7 @@ final class ShelfStore {
         var name: String { url.lastPathComponent }
     }
 
-    static let capacity = 6
+    static let capacity = 12
 
     private(set) var items: [Item] = []
 

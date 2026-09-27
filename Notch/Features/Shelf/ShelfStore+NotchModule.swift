@@ -5,6 +5,10 @@ import UniformTypeIdentifiers
 extension ShelfStore: NotchModule {
     var earPriority: Int? { nil }
 
+    var tab: NotchTab? { NotchTab(title: "Files", symbol: "tray.full.fill") }
+
+    var acceptsFileDrops: Bool { true }
+
     @ViewBuilder
     func content(for placement: NotchPlacement) -> some View {
         switch placement {
@@ -28,10 +32,10 @@ private struct ShelfSection: View {
         return .white.opacity(isTargeted ? 0.9 : 0.25)
     }
 
-    /// Up to three items per row; rows are centered, so a single file sits in the middle.
+    /// Up to six items per row; rows are centered, so a single file sits in the middle.
     private var rows: [[ShelfStore.Item]] {
-        stride(from: 0, to: shelf.items.count, by: 3).map {
-            Array(shelf.items[$0..<min($0 + 3, shelf.items.count)])
+        stride(from: 0, to: shelf.items.count, by: 6).map {
+            Array(shelf.items[$0..<min($0 + 6, shelf.items.count)])
         }
     }
 
@@ -45,21 +49,22 @@ private struct ShelfSection: View {
             if shelf.items.isEmpty {
                 VStack(spacing: 6) {
                     Image(systemName: "tray.and.arrow.down")
-                        .font(.title2)
-                    Text("Drop files")
+                        .font(.title)
+                    Text("Drop files here to keep them handy")
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.6))
                 }
             } else {
                 VStack(spacing: 4) {
                     ForEach(rows, id: \.first?.id) { row in
-                        HStack(spacing: 2) {
+                        HStack(spacing: 10) {
                             ForEach(row) { item in
                                 FileTile(item: item, shelf: shelf)
                             }
                         }
                     }
                 }
+                .padding(.vertical, 6)
                 .opacity(rejectsDrop ? 0.3 : 1)
             }
 
@@ -69,7 +74,7 @@ private struct ShelfSection: View {
                     .foregroundStyle(.red)
             }
         }
-        .frame(width: 130, height: 96)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.snappy, value: isTargeted)
         .animation(.snappy, value: shelf.items)
         .onDrop(of: [.fileURL, .data], isTargeted: $isTargeted) { providers in
@@ -87,14 +92,14 @@ private struct FileTile: View {
     var body: some View {
         VStack(spacing: 2) {
             FileThumbnail(url: item.url)
-                .frame(width: 28, height: 28)
+                .frame(width: 30, height: 30)
             Text(item.name)
-                .font(.system(size: 9))
+                .font(.system(size: 10))
                 .foregroundStyle(.white.opacity(0.75))
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
-        .frame(width: 40)
+        .frame(width: 60)
         .contentShape(Rectangle())
         .onDrag {
             NSItemProvider(contentsOf: item.url) ?? NSItemProvider()
