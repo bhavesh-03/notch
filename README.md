@@ -66,8 +66,21 @@ Notch lives in the space around your camera. At rest it's just the notch, with a
 2. Open it and drag **Notch** into **Applications**.
 3. Open Notch from Applications.
 
-> [!NOTE]
-> Notch isn't notarized by Apple yet, so the first time you open it macOS says it can't verify the developer. Go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**. You only need to do this once.
+### First launch: "Notch" Not Opened
+
+Notch isn't notarized by Apple yet, so the first time you open it macOS shows **"Notch" Not Opened — Apple could not verify "Notch" is free of malware**. The app is fine; macOS just can't vouch for it. To open it:
+
+1. Click **Done**.
+2. Open **System Settings → Privacy & Security** and scroll to the bottom.
+3. Next to *"Notch" was blocked to protect your Mac*, click **Open Anyway**, then confirm with your password or Touch ID.
+
+You only need to do this once. The **Open Anyway** button appears for about an hour after the blocked attempt; if it's gone, open Notch again and it'll come back. (Right-click → Open no longer skips this check on recent macOS.)
+
+If you're comfortable with Terminal, this does the same in one step, by removing the "downloaded from the internet" flag:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Notch.app
+```
 
 To start Notch when you log in, hover over the notch, right-click it, and turn on **Launch at Login**.
 
