@@ -5,6 +5,7 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 ## Unreleased
 
 ### Added
+- **Calculator:** a button beside the camera (with the Calculator app's icon) opens a calculator: type or tap an expression (+ − × ÷, parentheses, %, ^) and see the result as you go; Return keeps it in history and continues from it, clicking a result copies it. A Calculator widget shows the last result.
 - **Notes:** a Notes tab with quick notes you type in the notch (first line is the title, pin to keep on top, empty notes are dropped), and a Notes widget for Home. The notch stays open while you type; Esc or clicking elsewhere lets it close.
 - **Devices:** when AirPods, Beats, headphones, speakers, keyboards, mice or controllers connect over Bluetooth, the notch pops up with the device springing in and its battery rings filling (left, right and case for AirPods and Beats). A Devices widget lists what's connected with batteries. Needs Bluetooth permission.
 - **Volume & brightness in the notch:** the volume, mute and brightness keys show the notch's own indicator (a pop-up with a level bar, or a bar along the bottom of the open notch) instead of macOS's. ⇧⌥ gives quarter steps. Needs Accessibility permission; keys the notch can't act on (an external display's brightness, an output without volume control) still go to macOS.
@@ -12,6 +13,10 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 
 ### Changed
 - The app is no longer sandboxed, so it can take over the volume and brightness keys. Settings, the Home layout and shelf copies move over automatically on first launch.
+
+### Fixed
+- The collapsed notch's ears no longer cover the menus of apps whose menu bar reaches the camera (Xcode, say): while such an app's menus are showing, the notch collapses to just the camera housing. In full screen, where the menu bar hides, the ears come back as soon as it slides away. Needs Accessibility permission to read the menu bar.
+- The calendar's "Tomorrow" label now counts from the time it's shown for, not always from the current clock.
 
 ## 1.1.0 — 2026-09-27
 

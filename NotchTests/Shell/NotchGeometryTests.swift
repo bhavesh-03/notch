@@ -113,3 +113,76 @@ struct NotchGeometryTests {
         #expect(geometry.collapsedRect == geometry.notchRect)
     }
 }
+
+struct MenuBarClearanceTests {
+    // The MacBook Air's notch in screen coordinates (as NotchGeometryTests' airScreen).
+    let notch = CGRect(x: 645.5, y: 924, width: 179, height: 32)
+    let ear: CGFloat = 40
+
+    private func title(from minX: CGFloat, to maxX: CGFloat) -> CGRect {
+        CGRect(x: minX, y: 0, width: maxX - minX, height: 24)
+    }
+
+    @Test func aFewMenusLeaveRoomForTheEars() {
+        let menus = [title(from: 10, to: 40), title(from: 40, to: 90), title(from: 90, to: 140)]
+        #expect(MenuBarClearance.earsFit(menuTitles: menus, notch: notch, earWidth: ear))
+    }
+
+    @Test func aMenuRunningUpToTheCameraBlocksTheLeftEar() {
+        // Like Xcode's "Integrate", ending just short of the camera.
+        let menus = [title(from: 560, to: 640)]
+        #expect(!MenuBarClearance.earsFit(menuTitles: menus, notch: notch, earWidth: ear))
+    }
+
+    @Test func menusContinuedPastTheCameraBlockTheRightEar() {
+        // Like Xcode's "Window" and "Help", placed right of the camera.
+        let menus = [title(from: 830, to: 900)]
+        #expect(!MenuBarClearance.earsFit(menuTitles: menus, notch: notch, earWidth: ear))
+    }
+
+    @Test func menusWellClearOfTheEarsAreFine() {
+        let menus = [title(from: 400, to: 590), title(from: 880, to: 940)]
+        #expect(MenuBarClearance.earsFit(menuTitles: menus, notch: notch, earWidth: ear))
+    }
+}
+
+struct MenuBarPresenceTests {
+    // The MacBook Air's screen: 956 pt tall, a 33 pt menu bar (as logged from the real thing).
+    let top: CGFloat = 956
+    let height: CGFloat = 33
+
+    @Test func hiddenUntilThePointerTouchesTheTop() {
+        var presence = MenuBarPresence()
+        let showing1 = presence.update(pointerY: 597, screenTop: top, menuBarHeight: height, menuOpen: false)
+        #expect(!showing1)
+        let showing2 = presence.update(pointerY: 940, screenTop: top, menuBarHeight: height, menuOpen: false)
+        #expect(!showing2, "near the top isn't enough")
+        let showing3 = presence.update(pointerY: 955, screenTop: top, menuBarHeight: height, menuOpen: false)
+        #expect(showing3)
+    }
+
+    @Test func staysWhileThePointerIsInTheMenuBarThenHides() {
+        var presence = MenuBarPresence()
+        _ = presence.update(pointerY: 956, screenTop: top, menuBarHeight: height, menuOpen: false)
+        let showing4 = presence.update(pointerY: 930, screenTop: top, menuBarHeight: height, menuOpen: false)
+        #expect(showing4, "moving along the menu bar")
+        let showing5 = presence.update(pointerY: 846, screenTop: top, menuBarHeight: height, menuOpen: false)
+        #expect(!showing5, "moved down, as logged")
+    }
+
+    @Test func anOpenMenuKeepsItRevealed() {
+        var presence = MenuBarPresence()
+        _ = presence.update(pointerY: 956, screenTop: top, menuBarHeight: height, menuOpen: false)
+        let showing6 = presence.update(pointerY: 700, screenTop: top, menuBarHeight: height, menuOpen: true)
+        #expect(showing6)
+        let showing7 = presence.update(pointerY: 700, screenTop: top, menuBarHeight: height, menuOpen: false)
+        #expect(!showing7, "menu closed")
+    }
+
+    @Test func switchingAppsStartsHidden() {
+        var presence = MenuBarPresence()
+        _ = presence.update(pointerY: 956, screenTop: top, menuBarHeight: height, menuOpen: false)
+        presence.reset()
+        #expect(!presence.isRevealed)
+    }
+}

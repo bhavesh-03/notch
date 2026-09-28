@@ -15,6 +15,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings: NotchSettings
     private let mediaKeys = MediaKeyTap()
     private var accessibilityWait: Task<Void, Never>?
+    /// The frontmost app's menus run into the ears' space, so the collapsed notch goes without them.
+    private var menusReachEars = false
+    private var menusWouldReach = false
+    private var frontmostIsFullScreen = false
+    private var menuBarPresence = MenuBarPresence()
+    private var menuCheck: Task<Void, Never>?
     private lazy var settingsWindow = SettingsWindowController(settings: settings)
     private var monitors: [Any] = []
     private var screenChangeTask: Task<Void, Never>?
@@ -40,10 +46,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.ignoresMouseEvents = true
         panel.orderFrontRegardless()
         
-        viewModel.onExpandedChange = { [weak panel, weak viewModel] expanded in
+        viewModel.onExpandedChange = { [weak self, weak panel, weak viewModel] expanded in
             panel?.ignoresMouseEvents = !expanded
             if expanded {
                 viewModel?.launchAtLogin.refresh()
+            } else {
+                self?.checkMenuBar()   // the app's menus may have changed while it was open
             }
         }
         
@@ -87,6 +95,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mediaKeys.onKey = { [weak viewModel] key, fine in
             viewModel?.levels.handle(key, fine: fine) ?? false
         }
+
+        watchMenuBar()
 
         settings.onGeometryChanged = { [weak self] in
             self?.updateGeometry()
@@ -209,6 +219,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handleMouseMoved(isDraggingFile: Bool = false) {
         guard let viewModel else { return }
+        followMenuBar()
         
         let mouse = NSEvent.mouseLocation
         let tallShape = viewModel.geometry.hoverTarget(isExpanded: true, hasHeadline: true, isDraggingFile: false)
@@ -232,10 +243,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let screen = notchedScreen ?? NSScreen.main else { return nil }
         var geometry = NotchGeometry(screen: screen)
         geometry.expandedWidth = settings.width.points
-        geometry.showsEars = settings.showsEars
+        geometry.showsEars = settings.showsEars && !menusReachEars
         return geometry
     }
     
+    /// Watches for app switches (each app has its own menus) and space switches (entering or
+    /// leaving full screen changes space).
+    private func watchMenuBar() {
+        let center = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.didActivateApplicationNotification, NSWorkspace.activeSpaceDidChangeNotification] {
+            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.checkMenuBar() }
+            }
+        }
+        checkMenuBar()
+    }
+
+    /// Hides the ears while the frontmost app's menus reach into their space and the menu bar is
+    /// showing. Whether the menus reach is read on app and space switches (after a moment: a newly
+    /// active app's menu bar takes a beat to settle). In full screen the menu bar comes and goes with
+    /// the pointer, so the pointer's moves decide (`followMenuBar`); nothing polls.
+    private func checkMenuBar() {
+        menuCheck?.cancel()
+        menuCheck = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled, let self, let viewModel = self.viewModel,
+                  viewModel.geometry.kind == .hardware else { return }
+            let geometry = viewModel.geometry
+            self.menusWouldReach = MenuBarClearance.frontmostMenuTitles().map {
+                !MenuBarClearance.earsFit(menuTitles: $0, notch: geometry.notchRect, earWidth: NotchGeometry.earWidth)
+            } ?? false   // unreadable without Accessibility: keep the ears
+            self.frontmostIsFullScreen = self.menusWouldReach && MenuBarClearance.frontmostIsFullScreen()
+            self.menuBarPresence.reset()
+            self.followMenuBar()
+        }
+    }
+
+    /// Re-decides the ears from the pointer: cheap, so it runs on every mouse move.
+    private func followMenuBar() {
+        guard menusWouldReach else { return setMenusReachEars(false) }
+        guard frontmostIsFullScreen, let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) else {
+            return setMenusReachEars(true)   // a menu bar that's always showing
+        }
+        let pointerY = NSEvent.mouseLocation.y
+        let top = screen.frame.maxY
+        let menuBarHeight = top - screen.visibleFrame.maxY
+        // A menu can only be open while the menu bar is revealed, so look for one only then.
+        let menuOpen = menuBarPresence.isRevealed && pointerY < top - menuBarHeight && MenuBarClearance.frontmostHasMenuOpen()
+        let showing = menuBarPresence.update(pointerY: pointerY, screenTop: top, menuBarHeight: menuBarHeight, menuOpen: menuOpen)
+        setMenusReachEars(showing)
+    }
+
+    private func setMenusReachEars(_ reach: Bool) {
+        guard reach != menusReachEars else { return }
+        menusReachEars = reach
+        withAnimation(NotchMotion.earHandover(reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)) {
+            updateGeometry()
+        }
+    }
+
     /// Rebuilds the geometry after the screen or a Look setting changed, and moves the panel to match.
     private func updateGeometry() {
         guard let panel, let viewModel, let geometry = currentGeometry() else { return }
