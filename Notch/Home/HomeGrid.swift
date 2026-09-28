@@ -15,7 +15,7 @@ struct HomeGrid: View {
                 width: (proxy.size.width - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns),
                 height: (proxy.size.height - Self.spacing * CGFloat(HomeLayout.rows - 1)) / CGFloat(HomeLayout.rows)
             )
-            GlassEffectContainer(spacing: Self.spacing / 2) {
+            GlassGroup(spacing: Self.spacing / 2) {
             ZStack(alignment: .topLeading) {
                 ForEach(placed, id: \.widget.id) { placement in
                     WidgetCard {
@@ -49,7 +49,7 @@ struct WidgetCard<Content: View>: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // A widget never grows past its cell, whatever its content asks for.
             .clipShape(.rect(cornerRadius: 14, style: .continuous))
-            .glassEffect(.regular, in: .rect(cornerRadius: 14, style: .continuous))
+            .glassSurface(in: .rect(cornerRadius: 14, style: .continuous))
     }
 }
 

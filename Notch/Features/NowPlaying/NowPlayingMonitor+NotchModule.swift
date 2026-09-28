@@ -157,7 +157,7 @@ private struct PlayerSwitcher: View {
             // One glass square behind the icons that slides to whichever app is shown.
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(.clear)
-                .glassEffect(.regular, in: .rect(cornerRadius: 7, style: .continuous))
+                .glassSurface(in: .rect(cornerRadius: 7, style: .continuous), fallbackOpacity: 0.2)
                 .matchedGeometryEffect(id: "shown-player", in: selection, isSource: false)
         }
         .animation(.snappy, value: shown.id)

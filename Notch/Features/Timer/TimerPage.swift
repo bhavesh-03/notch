@@ -380,7 +380,7 @@ private struct RulerCanvas: View, Animatable {
     private static let labelY: CGFloat = 8
     private static let tickBottom: CGFloat = 58
     /// The glow's hot center: the accent pushed most of the way to white.
-    private var glowCore: Color { accent.mix(with: .white, by: 0.65) }
+    private var glowCore: Color { Color(nsColor: NSColor(accent).blended(withFraction: 0.65, of: .white) ?? .white) }
 
     var body: some View {
         Canvas { context, size in

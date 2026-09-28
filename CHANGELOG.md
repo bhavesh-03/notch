@@ -8,6 +8,7 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 - `Tools/make-dmg.sh` packages a release disk image (`dist/Notch-<version>.dmg`) with an Applications shortcut, and signs, notarizes and staples it when a Developer ID certificate is available.
 
 ### Changed
+- **Runs on macOS 14 Sonoma and later** (was macOS 27 only). Liquid Glass is used on macOS 26 and later; earlier versions get the flat, translucent controls from before it.
 - The README is rewritten for people using the app (features, screenshots, installation, permissions, privacy); the internals moved to `docs/ARCHITECTURE.md`.
 
 ## 1.2.0 — 2026-09-28

@@ -47,7 +47,7 @@ struct HomeLayoutEditor<Tile: View>: View {
             )
             // One container, so cards blend as they pass each other while dragging. Its spacing is below
             // the gap between cards, so they never merge at rest.
-            GlassEffectContainer(spacing: spacing / 2) {
+            GlassGroup(spacing: spacing / 2) {
                 ZStack(alignment: .topLeading) {
                     emptyCells(cell: cell, placed: arrangement.placed)
                     ForEach(arrangement.placed, id: \.widget.id) { placement in
@@ -101,7 +101,7 @@ struct HomeLayoutEditor<Tile: View>: View {
         return tile(placement.widget)
             .frame(width: size.width, height: size.height)
             .clipShape(.rect(cornerRadius: cornerRadius, style: .continuous))
-            .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius, style: .continuous))
+            .glassSurface(in: .rect(cornerRadius: cornerRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(.white.opacity(isDragged ? 0.5 : 0.22), lineWidth: 1)

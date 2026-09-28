@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="Version 1.2.0" src="https://img.shields.io/badge/version-1.2.0-orange">
-  <img alt="macOS 27 or later" src="https://img.shields.io/badge/macOS-27%2B-black">
+  <img alt="macOS 14 or later" src="https://img.shields.io/badge/macOS-14%2B-black">
   <img alt="Swift 6 and SwiftUI" src="https://img.shields.io/badge/Swift-6-F05138">
 </p>
 
@@ -40,7 +40,7 @@ Notch lives in the space around your camera. At rest it's just the notch, with a
 
 **Yours to shape**
 - Choose which features appear and in what order, the notch's width, corners and accent color, hover delay, animation speed, and which pop-ups show.
-- Liquid Glass throughout, Reduce Motion support, and it works on displays without a notch too.
+- Liquid Glass on macOS 26 and later, Reduce Motion support, and it works on displays without a notch too.
 
 ## Screenshots
 
@@ -97,8 +97,9 @@ Everything stays on your Mac. Notch has no accounts, no analytics and no network
 
 ## Requirements
 
-- macOS 27 or later
-- Any Mac — MacBooks with a notch get the full experience; other displays get a floating notch at the top of the screen
+- macOS 14 Sonoma or later. Liquid Glass appears on macOS 26 and later; earlier versions get the same design with flat, translucent controls.
+- Any Mac — MacBooks with a notch get the full experience; other displays get a floating notch at the top of the screen.
+- Developed and tested on macOS 27; on earlier versions, features that rely on private macOS behavior (Now Playing, brightness, temperatures, AirPods batteries) are the most likely to differ.
 
 ## Building from source
 

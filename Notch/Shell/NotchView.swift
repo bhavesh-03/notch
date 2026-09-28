@@ -47,7 +47,7 @@ struct NotchView: View {
         case .virtual:
             notchShape
                 .fill(.clear)
-                .glassEffect(.regular.tint(.black.opacity(0.55)), in: notchShape)
+                .glassTinted(.black.opacity(0.55), in: notchShape)
         }
     }
 
@@ -245,7 +245,7 @@ struct NotchView: View {
         if viewModel.selectedTabModule?.tab?.style != .page {
             Capsule()
                 .fill(.clear)
-                .glassEffect(.regular, in: Capsule())
+                .glassSurface(in: Capsule(), fallbackOpacity: 0.18)
                 .matchedGeometryEffect(id: "selected-tab", in: tabGlass, isSource: false)
         }
     }
