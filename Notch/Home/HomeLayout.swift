@@ -21,7 +21,7 @@ enum WidgetSize: String, CaseIterable, Codable, Identifiable {
 
 /// Something that can sit on Home. One of each at most.
 enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
-    case battery, timer, calendar, cpu, gpu, memory, temperature, devices, notes
+    case battery, timer, calendar, cpu, gpu, memory, temperature, devices, notes, calculator
 
     var id: String { rawValue }
 
@@ -34,6 +34,7 @@ enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
         case .cpu, .gpu, .memory, .temperature: .systemStats
         case .devices: .devices
         case .notes: .notes
+        case .calculator: .calculator
         }
     }
 
@@ -48,6 +49,7 @@ enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
         case .temperature: "Temperature"
         case .devices: "Devices"
         case .notes: "Notes"
+        case .calculator: "Calculator"
         }
     }
 
@@ -65,6 +67,7 @@ enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
         case .temperature: "thermometer.medium"
         case .devices: "airpods.pro"
         case .notes: "note.text"
+        case .calculator: "app:com.apple.calculator"   // SF Symbols has no calculator
         }
     }
 }

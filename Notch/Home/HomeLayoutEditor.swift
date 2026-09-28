@@ -208,7 +208,11 @@ struct AddWidgetMenu: View {
                 Button {
                     settings.homeLayout.add(kind)
                 } label: {
-                    Label(kind.title, systemImage: kind.symbol)
+                    Label {
+                        Text(kind.title)
+                    } icon: {
+                        NotchIcon(name: kind.symbol)
+                    }
                 }
                 .disabled(!settings.isVisible(kind.feature))
             }

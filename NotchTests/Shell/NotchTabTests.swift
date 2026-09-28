@@ -19,7 +19,7 @@ struct NotchTabTests {
         #expect(model.shelf.tab == NotchTab(title: "Files", symbol: "tray.full.fill"))
         #expect(model.shelf.acceptsFileDrops)
         #expect(model.tabModules.filter { $0.tab?.style == .tab }.map { $0.tab?.title } == ["Files", "Notes"])
-        #expect(model.tabModules.filter { $0.tab?.style == .button }.map { $0.tab?.title } == ["Mirror"])
+        #expect(model.tabModules.filter { $0.tab?.style == .button }.map { $0.tab?.title } == ["Mirror", "Calculator"])
         #expect(model.tabModules.filter { $0.tab?.style == .page }.map { $0.tab?.title } == ["Timer", "Calendar"])
     }
 

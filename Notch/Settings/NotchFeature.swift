@@ -14,6 +14,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
     case levels
     case devices
     case notes
+    case calculator
 
     var id: String { rawValue }
 
@@ -29,6 +30,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .levels: "Volume & Brightness"
         case .devices: "Devices"
         case .notes: "Notes"
+        case .calculator: "Calculator"
         }
     }
 
@@ -44,6 +46,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .levels: "speaker.wave.2.fill"
         case .devices: "airpods.pro"
         case .notes: "note.text"
+        case .calculator: "app:com.apple.calculator"   // SF Symbols has no calculator
         }
     }
 
@@ -59,6 +62,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .levels: "Shows volume and brightness in the notch instead of macOS's indicator"
         case .devices: "AirPods and other Bluetooth devices: a pop-up when they connect, and batteries"
         case .notes: "Quick notes in their own tab, and a Home widget"
+        case .calculator: "A calculator from a button beside the camera, and a Home widget"
         }
     }
 }

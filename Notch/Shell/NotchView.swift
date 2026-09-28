@@ -292,7 +292,9 @@ struct NotchView: View {
         return Button {
             viewModel.select(tab: selected ? nil : module)
         } label: {
-            Image(systemName: tab.symbol)
+            NotchIcon(name: tab.symbol)
+                // An app icon keeps its colors; dimmed like the other icons when not selected.
+                .opacity(NotchIcon.isAppIcon(tab.symbol) && !selected ? 0.7 : 1)
                 .font(.caption.weight(.medium))
                 .frame(width: 24, height: 22)
                 .background { selectionPill(selected) }

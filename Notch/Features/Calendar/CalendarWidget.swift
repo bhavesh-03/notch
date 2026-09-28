@@ -121,8 +121,10 @@ struct StartLabel: View {
     static func text(for event: CalendarEvent, at now: Date) -> String {
         if event.isInProgress(at: now) { return event.isAllDay ? "Today" : "Now" }
         let calendar = Calendar.current
+        // Relative to `now`, not the real clock, so the wording is right for any moment it's asked about.
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now))!
         let day = calendar.isDate(event.start, inSameDayAs: now) ? nil
-            : calendar.isDateInTomorrow(event.start) ? "Tomorrow"
+            : calendar.isDate(event.start, inSameDayAs: tomorrow) ? "Tomorrow"
             : event.start.formatted(.dateTime.weekday(.abbreviated))
         let time = event.isAllDay ? "All day" : event.start.formatted(date: .omitted, time: .shortened)
         return [day, time].compactMap { $0 }.joined(separator: " · ")

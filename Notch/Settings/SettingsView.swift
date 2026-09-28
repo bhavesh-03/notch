@@ -143,7 +143,7 @@ private struct WidgetDiagramTile: View {
 
     var body: some View {
         VStack(spacing: 3) {
-            Image(systemName: widget.kind.symbol)
+            NotchIcon(name: widget.kind.symbol, size: widget.size == .small ? 16 : 20)
                 .font(.system(size: widget.size == .small ? 13 : 17, weight: .semibold))
             if widget.size != .small {
                 Text(widget.kind.title)
@@ -401,11 +401,18 @@ private struct FeatureRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: feature.symbol)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 26, height: 26)
-                .background(.tint, in: .rect(cornerRadius: 6))
+            Group {
+                if NotchIcon.isAppIcon(feature.symbol) {
+                    // An app's own icon is already a tile.
+                    NotchIcon(name: feature.symbol, size: 28)
+                } else {
+                    Image(systemName: feature.symbol)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 26, height: 26)
+                        .background(.tint, in: .rect(cornerRadius: 6))
+                }
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(feature.title)
                 Text(feature.summary)

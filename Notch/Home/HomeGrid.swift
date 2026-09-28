@@ -70,6 +70,8 @@ struct HomeWidgetView: View {
             DevicesWidget(monitor: viewModel.bluetooth, size: size)
         case .notes:
             NotesWidget(store: viewModel.notes, size: size)
+        case .calculator:
+            CalculatorWidget(model: viewModel.calculator, size: size)
         }
     }
 }
