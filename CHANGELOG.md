@@ -2,7 +2,7 @@
 
 All notable changes to Notch. Versions follow [Semantic Versioning](https://semver.org): new features bump the minor version, fixes bump the patch version.
 
-## Unreleased
+## 1.2.0 — 2026-09-28
 
 ### Added
 - **Calculator:** a button beside the camera (with the Calculator app's icon) opens a calculator: type or tap an expression (+ − × ÷, parentheses, %, ^) and see the result as you go; Return keeps it in history and continues from it, clicking a result copies it. A Calculator widget shows the last result.
