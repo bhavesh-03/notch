@@ -7,9 +7,15 @@
 
 import AppKit
 
-/// Draws the icon on a 1024-unit canvas, following Apple's macOS template:
-/// an 824-unit rounded-square body centred on the canvas, with a soft drop shadow.
+/// Draws the icon on a 1024-unit canvas, following Apple's macOS template: an 824-unit
+/// rounded-square body centred on the canvas, with a soft drop shadow.
+///
+/// "Midnight island": a graphite tile with a warm glow, and the notch opened up the way the app
+/// opens it, showing a timer ring and music bars. At the smallest sizes (16 and 32 px) the details
+/// are drawn bolder and fewer, so they still read.
 func drawIcon(in ctx: CGContext, scale: CGFloat) {
+    let pixels = 1024 * scale
+    let small = pixels <= 32
     // Shadow blur and offset are in device pixels (the CTM doesn't scale them), so scale them by hand.
     func shadow(_ dy: CGFloat, _ blur: CGFloat) -> (CGSize, CGFloat) { (CGSize(width: 0, height: dy * scale), blur * scale) }
     let body = CGRect(x: 100, y: 100, width: 824, height: 824)
@@ -26,56 +32,61 @@ func drawIcon(in ctx: CGContext, scale: CGFloat) {
     ctx.addPath(bodyPath); ctx.setFillColor(color(0x000000)); ctx.fillPath()
     ctx.restoreGState()
 
-    // Sunset "screen" gradient (top of canvas is maxY in Core Graphics)
+    // Graphite body, with the accent's warm glow spilling from under the island
     ctx.saveGState()
     ctx.addPath(bodyPath); ctx.clip()
-    let sky = CGGradient(colorsSpace: space, colors: [color(0x2B1B5A), color(0x7A2E8E), color(0xE0567A), color(0xF7A85C)] as CFArray, locations: [0, 0.38, 0.72, 1])!
-    ctx.drawLinearGradient(sky, start: CGPoint(x: 512, y: 924), end: CGPoint(x: 512, y: 100), options: [])
-    // Soft glow behind the notch
-    let glow = CGGradient(colorsSpace: space, colors: [color(0xFFFFFF, 0.22), color(0xFFFFFF, 0)] as CFArray, locations: [0, 1])!
-    ctx.drawRadialGradient(glow, startCenter: CGPoint(x: 512, y: 760), startRadius: 0, endCenter: CGPoint(x: 512, y: 760), endRadius: 420, options: [])
+    let graphite = CGGradient(colorsSpace: space, colors: [color(0x2A2D36), color(0x0B0C10)] as CFArray, locations: [0, 1])!
+    ctx.drawLinearGradient(graphite, start: CGPoint(x: 512, y: 924), end: CGPoint(x: 512, y: 100), options: [])
+    let glow = CGGradient(colorsSpace: space, colors: [color(0xF59E4A, 0.55), color(0xE0567A, 0.25), color(0xE0567A, 0)] as CFArray, locations: [0, 0.45, 1])!
+    ctx.drawRadialGradient(glow, startCenter: CGPoint(x: 512, y: 560), startRadius: 0, endCenter: CGPoint(x: 512, y: 560), endRadius: 430, options: [])
 
-    // The notch: flush with the top edge, square top corners, rounded bottom corners
-    let notch = CGRect(x: 192, y: 924 - 250, width: 640, height: 250)
-    let r: CGFloat = 96
-    let notchPath = CGMutablePath()
-    notchPath.move(to: CGPoint(x: notch.minX, y: notch.maxY))
-    notchPath.addLine(to: CGPoint(x: notch.maxX, y: notch.maxY))
-    notchPath.addLine(to: CGPoint(x: notch.maxX, y: notch.minY + r))
-    notchPath.addArc(tangent1End: CGPoint(x: notch.maxX, y: notch.minY), tangent2End: CGPoint(x: notch.maxX - r, y: notch.minY), radius: r)
-    notchPath.addLine(to: CGPoint(x: notch.minX + r, y: notch.minY))
-    notchPath.addArc(tangent1End: CGPoint(x: notch.minX, y: notch.minY), tangent2End: CGPoint(x: notch.minX, y: notch.minY + r), radius: r)
-    notchPath.closeSubpath()
+    // The island: flush with the top edge, square top corners, round bottom ones. Drawn inside the
+    // body's clip, so its top corners never poke past the body's rounded ones.
+    let island = CGRect(x: 170, y: 924 - 420, width: 684, height: 420)
+    let r: CGFloat = 150
+    let islandPath = CGMutablePath()
+    islandPath.move(to: CGPoint(x: island.minX, y: island.maxY))
+    islandPath.addLine(to: CGPoint(x: island.maxX, y: island.maxY))
+    islandPath.addLine(to: CGPoint(x: island.maxX, y: island.minY + r))
+    islandPath.addArc(tangent1End: CGPoint(x: island.maxX, y: island.minY), tangent2End: CGPoint(x: island.maxX - r, y: island.minY), radius: r)
+    islandPath.addLine(to: CGPoint(x: island.minX + r, y: island.minY))
+    islandPath.addArc(tangent1End: CGPoint(x: island.minX, y: island.minY), tangent2End: CGPoint(x: island.minX, y: island.minY + r), radius: r)
+    islandPath.closeSubpath()
     ctx.saveGState()
-    let (o2, b2) = shadow(-10, 30); ctx.setShadow(offset: o2, blur: b2, color: color(0x000000, 0.45))
-    ctx.addPath(notchPath); ctx.setFillColor(color(0x050506)); ctx.fillPath()
+    let (o2, b2) = shadow(-14, 40); ctx.setShadow(offset: o2, blur: b2, color: color(0x000000, 0.6))
+    ctx.addPath(islandPath); ctx.setFillColor(color(0x000000)); ctx.fillPath()
+    ctx.restoreGState()
     ctx.restoreGState()
 
-    // Camera lens, centred near the top of the notch
-    ctx.setFillColor(color(0x1C1E26)); ctx.fillEllipse(in: CGRect(x: 512 - 30, y: 924 - 88, width: 60, height: 60))
-    ctx.setFillColor(color(0x2E3B63)); ctx.fillEllipse(in: CGRect(x: 512 - 13, y: 924 - 71, width: 26, height: 26))
+    // Left: a timer ring, two-thirds run, in the accent
+    let ringCentre = CGPoint(x: 352, y: 660)
+    let ringWidth: CGFloat = small ? 40 : 26
+    ctx.setLineCap(.round)
+    ctx.setStrokeColor(color(0xFFFFFF, 0.14)); ctx.setLineWidth(ringWidth)
+    ctx.addArc(center: ringCentre, radius: 78, startAngle: 0, endAngle: .pi * 2, clockwise: false); ctx.strokePath()
+    ctx.setStrokeColor(color(0xF59E4A)); ctx.setLineWidth(ringWidth)
+    ctx.addArc(center: ringCentre, radius: 78, startAngle: .pi / 2, endAngle: .pi / 2 - .pi * 1.35, clockwise: true); ctx.strokePath()
 
-    // Left ear: a green battery
-    let battery = CGRect(x: 262, y: notch.minY + 70, width: 118, height: 62)
-    ctx.setStrokeColor(color(0xFFFFFF, 0.9)); ctx.setLineWidth(9)
-    ctx.addPath(CGPath(roundedRect: battery, cornerWidth: 18, cornerHeight: 18, transform: nil)); ctx.strokePath()
-    ctx.setFillColor(color(0xFFFFFF, 0.9))
-    ctx.addPath(CGPath(roundedRect: CGRect(x: battery.maxX + 8, y: battery.midY - 14, width: 11, height: 28), cornerWidth: 5, cornerHeight: 5, transform: nil)); ctx.fillPath()
-    ctx.setFillColor(color(0x34D058))
-    ctx.addPath(CGPath(roundedRect: battery.insetBy(dx: 15, dy: 15).divided(atDistance: (battery.width - 30) * 0.8, from: .minXEdge).slice, cornerWidth: 7, cornerHeight: 7, transform: nil)); ctx.fillPath()
-
-    // Right ear: sound bars
-    let heights: [CGFloat] = [46, 84, 62, 100, 54]
-    for (i, h) in heights.enumerated() {
-        let x = 632 + CGFloat(i) * 26
-        ctx.setFillColor(color(0xFFFFFF, 0.92))
-        ctx.addPath(CGPath(roundedRect: CGRect(x: x, y: battery.midY - h / 2, width: 14, height: h), cornerWidth: 7, cornerHeight: 7, transform: nil)); ctx.fillPath()
+    // Right: music bars (three bold ones when small)
+    let bars: [CGFloat] = small ? [90, 150, 110] : [70, 130, 96, 150, 84]
+    let barGap: CGFloat = small ? 72 : 52
+    let barWidth: CGFloat = small ? 44 : 30
+    let firstBar = 700 - barGap * CGFloat(bars.count - 1) / 2
+    ctx.setStrokeColor(color(0xFFFFFF)); ctx.setLineWidth(barWidth)
+    for (i, height) in bars.enumerated() {
+        let x = firstBar + CGFloat(i) * barGap
+        ctx.move(to: CGPoint(x: x, y: 660 - height / 2)); ctx.addLine(to: CGPoint(x: x, y: 660 + height / 2)); ctx.strokePath()
     }
-    ctx.restoreGState()
 
-    // Subtle top highlight on the body edge
+    // A glass rim: light catching the top edge, fainter at the bottom
     ctx.saveGState()
-    ctx.addPath(bodyPath); ctx.setStrokeColor(color(0xFFFFFF, 0.10)); ctx.setLineWidth(3); ctx.strokePath()
+    ctx.addPath(bodyPath); ctx.clip()
+    ctx.addPath(CGPath(roundedRect: body.insetBy(dx: 3, dy: 3), cornerWidth: corner - 3, cornerHeight: corner - 3, transform: nil))
+    ctx.setLineWidth(6)
+    ctx.replacePathWithStrokedPath()
+    ctx.clip()
+    let rim = CGGradient(colorsSpace: space, colors: [color(0xFFFFFF, 0.35), color(0xFFFFFF, 0), color(0xFFFFFF, 0.14)] as CFArray, locations: [0, 0.5, 1])!
+    ctx.drawLinearGradient(rim, start: CGPoint(x: 512, y: 924), end: CGPoint(x: 512, y: 100), options: [])
     ctx.restoreGState()
 }
 
