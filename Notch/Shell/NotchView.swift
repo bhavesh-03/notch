@@ -127,6 +127,7 @@ struct NotchView: View {
         }
         .animation(NotchMotion.earHandover(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.selectedTab)
         .environment(\.openNotchPage, OpenNotchPageAction { [viewModel] module in viewModel.select(tab: module) })
+        .environment(\.textEditing, TextEditingAction { [viewModel] editing in viewModel.setEditingText(editing) })
         .overlay(alignment: .bottom) {
             if viewModel.showsLevelsOverExpanded {
                 levelsOverlay
@@ -196,12 +197,13 @@ struct NotchView: View {
     /// Home and the labelled tabs left of the camera; icon buttons (like the mirror) right of it.
     private var tabBar: some View {
         HStack(spacing: 0) {
-            HStack(spacing: 4) {
-                tabButton(title: "Home", symbol: "house.fill", module: nil)
+            let labels = tabLabels
+            HStack(spacing: TabBarLayout.spacing) {
+                tabButton(title: "Home", symbol: "house.fill", module: nil, labels: labels)
                 ForEach(tabs(.tab).indices, id: \.self) { index in
                     let module = tabs(.tab)[index]
                     if let tab = module.tab {
-                        tabButton(title: tab.title, symbol: tab.symbol, module: module)
+                        tabButton(title: tab.title, symbol: tab.symbol, module: module, labels: labels)
                     }
                 }
             }
@@ -252,12 +254,29 @@ struct NotchView: View {
         viewModel.selectedTab == module.map { ObjectIdentifier($0) }
     }
 
-    private func tabButton(title: String, symbol: String, module: (any NotchModule)?) -> some View {
+    /// Room for the tabs left of the camera, less a little breathing space.
+    private var tabSpace: CGFloat {
+        (geometry.expandedWidth - geometry.notchRect.width) / 2 - 22 - 10
+    }
+
+    private var tabLabels: TabBarLayout.Labels {
+        let modules: [(any NotchModule)?] = [nil] + tabs(.tab).map { $0 }
+        let titles = modules.map { $0?.tab?.title ?? "Home" }
+        return TabBarLayout.labels(
+            titleWidths: titles.map { TabBarLayout.measure($0) },
+            selected: modules.firstIndex { isSelected($0) },
+            available: tabSpace
+        )
+    }
+
+    private func tabButton(title: String, symbol: String, module: (any NotchModule)?, labels: TabBarLayout.Labels) -> some View {
         let selected = isSelected(module)
+        let showsTitle = labels == .all || (labels == .selectedOnly && selected)
         return Button {
             viewModel.select(tab: module)
         } label: {
             Label(title, systemImage: symbol)
+                .labelStyle(TabLabelStyle(showsTitle: showsTitle))
                 .font(.caption.weight(.medium))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
@@ -432,4 +451,20 @@ extension NotchGeometry {
     ChargingBattery(status: BatteryStatus(level: 78, isCharging: true, isPluggedIn: true), startsFinished: true)
         .padding()
         .background(.black)
+}
+
+/// A tab's icon, with its title when there's room for it.
+private struct TabLabelStyle: LabelStyle {
+    let showsTitle: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: TabBarLayout.iconTitleGap) {
+            configuration.icon
+                .frame(width: TabBarLayout.iconWidth)
+            if showsTitle {
+                configuration.title
+                    .transition(.opacity.combined(with: .scale(scale: 0.8, anchor: .leading)))
+            }
+        }
+    }
 }

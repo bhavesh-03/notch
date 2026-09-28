@@ -33,7 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         guard let geometry = currentGeometry() else { return }
         
-        let viewModel = NotchViewModel(geometry: geometry, settings: settings)
+        let viewModel = NotchViewModel(geometry: geometry, settings: settings, notes: NotesStore())
         self.viewModel = viewModel
         let panel = NotchPanel(contentRect: geometry.panelRect)
         panel.contentView = NSHostingView(rootView: NotchView(viewModel: viewModel))
@@ -70,6 +70,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel.onOpenSettings = { [weak self] in
             self?.settingsWindow.show()
         }
+        // Clicking into another app ends typing in the notch, even if SwiftUI still thinks the
+        // editor is focused; otherwise the notch would stay open.
+        NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: panel, queue: .main) { [weak viewModel] _ in
+            MainActor.assumeIsolated { viewModel?.setEditingText(false) }
+        }
+
         viewModel.bluetooth.onConnected = { [weak viewModel] _ in
             guard let viewModel else { return }
             // Longer than other pop-ups: the batteries arrive a moment after the connection.

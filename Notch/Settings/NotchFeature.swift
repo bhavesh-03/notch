@@ -13,6 +13,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
     case systemStats
     case levels
     case devices
+    case notes
 
     var id: String { rawValue }
 
@@ -27,6 +28,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .systemStats: "System Stats"
         case .levels: "Volume & Brightness"
         case .devices: "Devices"
+        case .notes: "Notes"
         }
     }
 
@@ -41,6 +43,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .systemStats: "gauge.with.dots.needle.33percent"
         case .levels: "speaker.wave.2.fill"
         case .devices: "airpods.pro"
+        case .notes: "note.text"
         }
     }
 
@@ -55,6 +58,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .systemStats: "CPU, GPU, memory and temperature widgets for Home"
         case .levels: "Shows volume and brightness in the notch instead of macOS's indicator"
         case .devices: "AirPods and other Bluetooth devices: a pop-up when they connect, and batteries"
+        case .notes: "Quick notes in their own tab, and a Home widget"
         }
     }
 }

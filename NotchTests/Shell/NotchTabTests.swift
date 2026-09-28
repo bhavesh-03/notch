@@ -18,7 +18,7 @@ struct NotchTabTests {
         let model = model()
         #expect(model.shelf.tab == NotchTab(title: "Files", symbol: "tray.full.fill"))
         #expect(model.shelf.acceptsFileDrops)
-        #expect(model.tabModules.filter { $0.tab?.style == .tab }.map { $0.tab?.title } == ["Files"])
+        #expect(model.tabModules.filter { $0.tab?.style == .tab }.map { $0.tab?.title } == ["Files", "Notes"])
         #expect(model.tabModules.filter { $0.tab?.style == .button }.map { $0.tab?.title } == ["Mirror"])
         #expect(model.tabModules.filter { $0.tab?.style == .page }.map { $0.tab?.title } == ["Timer", "Calendar"])
     }
@@ -83,5 +83,34 @@ struct NotchTabTests {
         let model = model()
         model.expand()
         #expect(!model.hoverIsTall(pointerInTallShape: true))
+    }
+}
+
+struct TabBarLayoutTests {
+    // Roughly Home, Files and Notes in the tab font.
+    let widths: [CGFloat] = [33, 28, 36]
+
+    @Test func everyLabelWhenThereIsRoom() {
+        #expect(TabBarLayout.labels(titleWidths: widths, selected: 0, available: 300) == .all)
+    }
+
+    @Test func onlyTheSelectedLabelWhenTight() {
+        // Standard width leaves about 150 pt left of the camera: three labels don't fit, one does.
+        #expect(TabBarLayout.labels(titleWidths: widths, selected: 2, available: 150) == .selectedOnly)
+    }
+
+    @Test func iconsOnlyWhenVeryTight() {
+        #expect(TabBarLayout.labels(titleWidths: widths, selected: 0, available: 100) == .none)
+    }
+
+    @Test func aPageWithNoTabShowsIconsWhenTight() {
+        // The timer and calendar pages have no tab button, so nothing is selected in the bar.
+        #expect(TabBarLayout.labels(titleWidths: widths, selected: nil, available: 150) == .selectedOnly)
+        #expect(TabBarLayout.labels(titleWidths: widths, selected: nil, available: 90) == .none)
+    }
+
+    @Test func realTitlesAreMeasured() {
+        #expect(TabBarLayout.measure("Notes") > TabBarLayout.measure("Home") * 0.5)
+        #expect(TabBarLayout.measure("") == 0)
     }
 }

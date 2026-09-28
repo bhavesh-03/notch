@@ -42,6 +42,7 @@ final class NotchViewModel {
     let stats = SystemStatsMonitor()
     let levels = LevelIndicator()
     let bluetooth = BluetoothMonitor()
+    let notes: NotesStore
     let launchAtLogin = LaunchAtLogin()
     let settings: NotchSettings
 
@@ -90,7 +91,7 @@ final class NotchViewModel {
         select(tab: target)
     }
     /// Every module, whether or not the user shows it.
-    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, mirror, stats, levels, bluetooth] }
+    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, mirror, stats, levels, bluetooth, notes] }
 
     /// Home's widgets in the user's order and sizes, minus those whose feature is hidden.
     var homeWidgets: [HomeWidget] {
@@ -109,10 +110,12 @@ final class NotchViewModel {
     init(
         geometry: NotchGeometry,
         settings: NotchSettings = .ephemeral(),
+        notes: NotesStore = .ephemeral(),
         reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
     ) {
         self.geometry = geometry
         self.settings = settings
+        self.notes = notes
         self.reduceMotion = reduceMotion
         timer = TimerController(duration: settings.timerLength)
         syncTimerLength()
@@ -193,6 +196,17 @@ final class NotchViewModel {
         isHeldOpen = false
     }
 
+    /// Someone is typing in the notch (a note); it stays open until they're done.
+    private(set) var isEditingText = false
+
+    func setEditingText(_ editing: Bool) {
+        isEditingText = editing
+        if editing {
+            collapseTask?.cancel()
+            collapseTask = nil
+        }
+    }
+
     func beginEditingHome() {
         selectedTab = nil
         isEditingHome = true
@@ -205,7 +219,7 @@ final class NotchViewModel {
     }
 
     func scheduleCollapse() {
-        guard isExpanded, !isHeldOpen, !isEditingHome, collapseTask == nil else { return }
+        guard isExpanded, !isHeldOpen, !isEditingHome, !isEditingText, collapseTask == nil else { return }
 
         collapseTask = Task {
             try? await Task.sleep(for: .milliseconds(300))

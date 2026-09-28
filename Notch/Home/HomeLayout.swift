@@ -21,7 +21,7 @@ enum WidgetSize: String, CaseIterable, Codable, Identifiable {
 
 /// Something that can sit on Home. One of each at most.
 enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
-    case battery, timer, calendar, cpu, gpu, memory, temperature, devices
+    case battery, timer, calendar, cpu, gpu, memory, temperature, devices, notes
 
     var id: String { rawValue }
 
@@ -33,6 +33,7 @@ enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
         case .calendar: .calendar
         case .cpu, .gpu, .memory, .temperature: .systemStats
         case .devices: .devices
+        case .notes: .notes
         }
     }
 
@@ -46,6 +47,7 @@ enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
         case .memory: "Memory"
         case .temperature: "Temperature"
         case .devices: "Devices"
+        case .notes: "Notes"
         }
     }
 
@@ -62,6 +64,7 @@ enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
         case .memory: "memorychip"
         case .temperature: "thermometer.medium"
         case .devices: "airpods.pro"
+        case .notes: "note.text"
         }
     }
 }

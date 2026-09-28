@@ -17,3 +17,21 @@ struct OpenNotchPageAction {
 extension EnvironmentValues {
     @Entry var openNotchPage = OpenNotchPageAction { _ in }
 }
+
+/// Lets a text field tell the notch someone is typing in it, so it stays open while the pointer
+/// wanders off (the way a window stays put while you type in it).
+struct TextEditingAction {
+    fileprivate let report: (Bool) -> Void
+
+    init(_ report: @escaping (Bool) -> Void) {
+        self.report = report
+    }
+
+    func callAsFunction(_ isEditing: Bool) {
+        report(isEditing)
+    }
+}
+
+extension EnvironmentValues {
+    @Entry var textEditing = TextEditingAction { _ in }
+}

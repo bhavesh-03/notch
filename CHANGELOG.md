@@ -5,6 +5,7 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 ## Unreleased
 
 ### Added
+- **Notes:** a Notes tab with quick notes you type in the notch (first line is the title, pin to keep on top, empty notes are dropped), and a Notes widget for Home. The notch stays open while you type; Esc or clicking elsewhere lets it close.
 - **Devices:** when AirPods, Beats, headphones, speakers, keyboards, mice or controllers connect over Bluetooth, the notch pops up with the device springing in and its battery rings filling (left, right and case for AirPods and Beats). A Devices widget lists what's connected with batteries. Needs Bluetooth permission.
 - **Volume & brightness in the notch:** the volume, mute and brightness keys show the notch's own indicator (a pop-up with a level bar, or a bar along the bottom of the open notch) instead of macOS's. ⇧⌥ gives quarter steps. Needs Accessibility permission; keys the notch can't act on (an external display's brightness, an output without volume control) still go to macOS.
 - **Liquid Glass:** the notch's buttons, chips and widget cards are glass, and a glass pill slides to the selected tab and to the shown player. Emphasized buttons (Done, Join, the chosen timer preset) stay solid, since tinted glass over the black notch loses its color. On screens without a notch, the notch itself is smoked glass instead of black. Settings uses glass buttons and accent swatches.
