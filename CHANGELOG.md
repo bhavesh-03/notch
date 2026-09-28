@@ -2,7 +2,7 @@
 
 All notable changes to Notch. Versions follow [Semantic Versioning](https://semver.org): new features bump the minor version, fixes bump the patch version.
 
-## Unreleased
+## 1.2.1 — 2026-09-28
 
 ### Added
 - The project is open source under the MIT License.
