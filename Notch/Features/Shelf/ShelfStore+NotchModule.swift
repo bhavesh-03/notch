@@ -78,6 +78,15 @@ private struct ShelfSection: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Right-click anywhere in the box, not just on a file: the gaps count too. A file's own menu
+        // still wins when you right-click the file itself.
+        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .contextMenu {
+            Button(shelf.items.isEmpty ? "Clear Shelf" : "Clear Shelf (\(shelf.items.count) \(shelf.items.count == 1 ? "file" : "files"))") {
+                shelf.removeAll()
+            }
+            .disabled(shelf.items.isEmpty)
+        }
         .animation(.snappy, value: isTargeted)
         .animation(.snappy, value: shelf.items)
         .onDrop(of: [.fileURL, .data], isTargeted: $isTargeted) { providers in
