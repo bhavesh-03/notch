@@ -5,6 +5,7 @@ All notable changes to Notch. Versions follow [Semantic Versioning](https://semv
 ## Unreleased
 
 ### Added
+- The project is open source under the MIT License.
 - `Tools/make-dmg.sh` packages a release disk image (`dist/Notch-<version>.dmg`) with an Applications shortcut, and signs, notarizes and staples it when a Developer ID certificate is available.
 
 ### Changed

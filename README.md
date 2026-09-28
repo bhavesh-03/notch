@@ -12,6 +12,7 @@
   <img alt="Version 1.2.0" src="https://img.shields.io/badge/version-1.2.0-orange">
   <img alt="macOS 14 or later" src="https://img.shields.io/badge/macOS-14%2B-black">
   <img alt="Swift 6 and SwiftUI" src="https://img.shields.io/badge/Swift-6-F05138">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"></a>
 </p>
 
 ---
@@ -132,3 +133,7 @@ For how it works inside — the panel, the module system, the Now Playing bridge
 ## Changelog
 
 See **[CHANGELOG.md](CHANGELOG.md)** for what changed in each version.
+
+## License
+
+Notch is released under the **[MIT License](LICENSE)**: you're free to use, change and share the code, as long as the copyright notice comes along. The Notch name and app icon aren't covered by the license.
