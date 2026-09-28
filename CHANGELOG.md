@@ -2,6 +2,14 @@
 
 All notable changes to Notch. Versions follow [Semantic Versioning](https://semver.org): new features bump the minor version, fixes bump the patch version.
 
+## Unreleased
+
+### Added
+- `Tools/make-dmg.sh` packages a release disk image (`dist/Notch-<version>.dmg`) with an Applications shortcut, and signs, notarizes and staples it when a Developer ID certificate is available.
+
+### Changed
+- The README is rewritten for people using the app (features, screenshots, installation, permissions, privacy); the internals moved to `docs/ARCHITECTURE.md`.
+
 ## 1.2.0 — 2026-09-28
 
 ### Added
