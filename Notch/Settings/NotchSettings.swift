@@ -46,6 +46,10 @@ final class NotchSettings {
     var swipeNavigationEnabled: Bool {
         didSet { save(swipeNavigationEnabled, Keys.swipeNavigationEnabled) }
     }
+    /// Whether hitting the notch with the mouse triggers tactile haptic feedback.
+    var hapticFeedbackEnabled: Bool {
+        didSet { save(hapticFeedbackEnabled, Keys.hapticFeedbackEnabled) }
+    }
     /// Features whose pop-up the user turned off. Stored as the exceptions, so a feature that gains
     /// a pop-up in a later version starts with it on.
     private(set) var mutedPopUps: Set<NotchFeature>
@@ -108,6 +112,7 @@ final class NotchSettings {
         hoverDelay = (defaults.object(forKey: Keys.hoverDelay) as? Double)?.clamped(to: Self.hoverDelayRange) ?? 0
         animationSpeed = defaults.string(forKey: Keys.animationSpeed).flatMap(AnimationSpeed.init(rawValue:)) ?? .standard
         swipeNavigationEnabled = defaults.object(forKey: Keys.swipeNavigationEnabled) as? Bool ?? true
+        hapticFeedbackEnabled = defaults.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? true
         mutedPopUps = Set(Self.features(forKey: Keys.mutedPopUps, in: defaults))
         homeLayout = defaults.data(forKey: Keys.homeLayout).flatMap { try? JSONDecoder().decode(HomeLayout.self, from: $0) } ?? .default
         timerLength = (defaults.object(forKey: Keys.timerLength) as? Double)?.clamped(to: TimerState.durationRange) ?? Self.defaultTimerLength
@@ -194,6 +199,7 @@ final class NotchSettings {
         hoverDelay = 0
         animationSpeed = .standard
         swipeNavigationEnabled = true
+        hapticFeedbackEnabled = true
         mutedPopUps = []
         save([String](), Keys.mutedPopUps)
     }
@@ -234,6 +240,7 @@ final class NotchSettings {
         static let hoverDelay = "settings.hoverDelaySeconds"
         static let animationSpeed = "settings.animationSpeed"
         static let swipeNavigationEnabled = "settings.swipeNavigationEnabled"
+        static let hapticFeedbackEnabled = "settings.hapticFeedbackEnabled"
         static let mutedPopUps = "settings.mutedPopUps"
         static let homeLayout = "settings.homeLayout"
         static let timerLength = "settings.timerLength"

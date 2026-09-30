@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @Observable
@@ -166,11 +167,21 @@ final class NotchViewModel {
         NotchMotion.activityClose(reduceMotion: reduceMotion(), speed: settings.animationSpeed.multiplier)
     }
 
+    /// Whether the pointer is resting on the notch hover target.
+    private(set) var isHovered = false
+
     /// The pointer is over the notch. Opens it after the user's hover delay; a file drag opens it
     /// right away, since the user is already on their way to drop.
     func pointerEntered(isDraggingFile: Bool = false) {
         collapseTask?.cancel()
         collapseTask = nil
+
+        if !isHovered {
+            isHovered = true
+            if !isExpanded && settings.hapticFeedbackEnabled {
+                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+            }
+        }
 
         let delay = settings.hoverDelay
         guard !isExpanded, !isDraggingFile, delay > 0 else {
@@ -189,6 +200,7 @@ final class NotchViewModel {
 
     /// The pointer left the notch: a pending open is called off, and an open notch closes soon.
     func pointerLeft() {
+        isHovered = false
         cancelPendingExpand()
         scheduleCollapse()
     }
@@ -203,6 +215,7 @@ final class NotchViewModel {
         collapseTask = nil
         activityTask?.cancel()
         activityTask = nil
+        isHovered = false
 
         guard !isExpanded else { return }
         withAnimation(NotchMotion.expandCollapse(speed: settings.animationSpeed.multiplier)) {

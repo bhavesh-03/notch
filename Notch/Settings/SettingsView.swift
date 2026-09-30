@@ -235,8 +235,9 @@ struct BehaviorSettings: View {
 
             Section {
                 Toggle("Swipe to switch tabs", isOn: $settings.swipeNavigationEnabled)
+                Toggle("Haptic feedback on hover", isOn: $settings.hapticFeedbackEnabled)
             } footer: {
-                Text("Swipe left or right with two fingers on the trackpad or mouse to switch tabs.")
+                Text("Swipe left or right with two fingers on the trackpad or mouse to switch tabs. Haptic feedback plays a subtle trackpad click when hitting the notch.")
                     .foregroundStyle(.secondary)
             }
 
