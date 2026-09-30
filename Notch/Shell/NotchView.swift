@@ -74,6 +74,7 @@ struct NotchView: View {
             .animation(NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.settings.cornerRadius)
             .environment(\.notchAccent, viewModel.settings.accent.color)
             .environment(\.timerPresets, viewModel.settings.showsTimerPresets ? viewModel.settings.timerPresets.map { $0 * 60 } : [])
+            .environment(\.hapticFeedbackEnabled, viewModel.settings.hapticFeedbackEnabled)
             .contextMenu { appMenu }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -485,3 +486,15 @@ private struct TabLabelStyle: LabelStyle {
         }
     }
 }
+
+private struct HapticFeedbackEnabledKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var hapticFeedbackEnabled: Bool {
+        get { self[HapticFeedbackEnabledKey.self] }
+        set { self[HapticFeedbackEnabledKey.self] = newValue }
+    }
+}
+
