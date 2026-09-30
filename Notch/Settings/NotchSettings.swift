@@ -42,6 +42,10 @@ final class NotchSettings {
     var animationSpeed: AnimationSpeed {
         didSet { save(animationSpeed.rawValue, Keys.animationSpeed) }
     }
+    /// Whether trackpad/mouse two-finger swipe navigates between tabs.
+    var swipeNavigationEnabled: Bool {
+        didSet { save(swipeNavigationEnabled, Keys.swipeNavigationEnabled) }
+    }
     /// Features whose pop-up the user turned off. Stored as the exceptions, so a feature that gains
     /// a pop-up in a later version starts with it on.
     private(set) var mutedPopUps: Set<NotchFeature>
@@ -103,6 +107,7 @@ final class NotchSettings {
         showsEars = defaults.object(forKey: Keys.showsEars) as? Bool ?? true
         hoverDelay = (defaults.object(forKey: Keys.hoverDelay) as? Double)?.clamped(to: Self.hoverDelayRange) ?? 0
         animationSpeed = defaults.string(forKey: Keys.animationSpeed).flatMap(AnimationSpeed.init(rawValue:)) ?? .standard
+        swipeNavigationEnabled = defaults.object(forKey: Keys.swipeNavigationEnabled) as? Bool ?? true
         mutedPopUps = Set(Self.features(forKey: Keys.mutedPopUps, in: defaults))
         homeLayout = defaults.data(forKey: Keys.homeLayout).flatMap { try? JSONDecoder().decode(HomeLayout.self, from: $0) } ?? .default
         timerLength = (defaults.object(forKey: Keys.timerLength) as? Double)?.clamped(to: TimerState.durationRange) ?? Self.defaultTimerLength
@@ -188,6 +193,7 @@ final class NotchSettings {
     func resetBehavior() {
         hoverDelay = 0
         animationSpeed = .standard
+        swipeNavigationEnabled = true
         mutedPopUps = []
         save([String](), Keys.mutedPopUps)
     }
@@ -227,6 +233,7 @@ final class NotchSettings {
         static let showsEars = "settings.showsEars"
         static let hoverDelay = "settings.hoverDelaySeconds"
         static let animationSpeed = "settings.animationSpeed"
+        static let swipeNavigationEnabled = "settings.swipeNavigationEnabled"
         static let mutedPopUps = "settings.mutedPopUps"
         static let homeLayout = "settings.homeLayout"
         static let timerLength = "settings.timerLength"

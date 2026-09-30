@@ -135,7 +135,7 @@ struct NotchView: View {
             }
         }
         .animation(.snappy, value: viewModel.showsLevelsOverExpanded)
-        .gesture(swipeTabGesture, including: viewModel.isEditingHome || viewModel.isEditingText || viewModel.selectedTabModule?.tab?.style == .page ? .none : .gesture)
+        .gesture(swipeTabGesture, including: viewModel.isEditingHome || viewModel.isEditingText || !viewModel.settings.swipeNavigationEnabled || viewModel.selectedTabModule?.tab?.style == .page ? .none : .gesture)
         .transition(.opacity)
     }
 

@@ -234,6 +234,13 @@ struct BehaviorSettings: View {
             }
 
             Section {
+                Toggle("Swipe to switch tabs", isOn: $settings.swipeNavigationEnabled)
+            } footer: {
+                Text("Swipe left or right with two fingers on the trackpad or mouse to switch tabs.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 ForEach(NotchFeature.withPopUps) { feature in
                     Toggle(feature.popUpTitle ?? feature.title, isOn: Binding(
                         get: { settings.showsPopUp(for: feature) },
