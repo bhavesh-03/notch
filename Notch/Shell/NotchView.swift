@@ -54,8 +54,6 @@ struct NotchView: View {
     var body: some View {
         notchSurface
             .frame(width: size.width, height: size.height)
-            .scaleEffect(viewModel.isHovered && !viewModel.isExpanded ? 1.05 : 1.0, anchor: .top)
-            .animation(.spring(duration: 0.25, bounce: 0.35), value: viewModel.isHovered)
             .overlay {
                 switch viewModel.presentation {
                 case .collapsed:
