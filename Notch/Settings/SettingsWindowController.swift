@@ -40,6 +40,7 @@ final class SettingsWindowController {
 
         let window = NSWindow(contentViewController: tabs)
         window.styleMask = [.titled, .closable, .miniaturizable]
+        window.title = "Notch (Dev Build)"
         window.toolbarStyle = .preference
         // Kept and reused, so reopening is instant and remembers the selected tab.
         window.isReleasedWhenClosed = false
