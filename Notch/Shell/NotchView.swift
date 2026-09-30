@@ -135,7 +135,22 @@ struct NotchView: View {
             }
         }
         .animation(.snappy, value: viewModel.showsLevelsOverExpanded)
+        .gesture(swipeTabGesture, including: viewModel.isEditingHome || viewModel.isEditingText || viewModel.selectedTabModule?.tab?.style == .page ? .none : .gesture)
         .transition(.opacity)
+    }
+
+    /// A horizontal drag that switches tabs: swipe left for the next, right for the previous.
+    private var swipeTabGesture: some Gesture {
+        DragGesture(minimumDistance: 15)
+            .onEnded { value in
+                let horizontal = value.translation.width
+                let vertical = abs(value.translation.height)
+                // Only count horizontal swipes; ignore mostly-vertical drags (e.g. scrolling).
+                guard abs(horizontal) > vertical else { return }
+                withAnimation(NotchMotion.earHandover(reduceMotion: reduceMotion, speed: motionSpeed)) {
+                    viewModel.navigateTab(forward: horizontal < 0)
+                }
+            }
     }
 
     /// Volume or brightness along the bottom of the open notch.

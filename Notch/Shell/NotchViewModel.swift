@@ -86,6 +86,30 @@ final class NotchViewModel {
         selectedTab = module.map { ObjectIdentifier($0) }
     }
 
+    /// The ordered list of navigable pages matching the visual tab bar layout (Home, .tab modules, .button modules).
+    private var navigablePages: [(any NotchModule)?] {
+        let tabs = tabModules.filter { $0.tab?.style == .tab }
+        let buttons = tabModules.filter { $0.tab?.style == .button }
+        return [nil] + tabs + buttons
+    }
+
+    /// Moves to the next (forward = true) or previous (forward = false) tab, wrapping at edges.
+    func navigateTab(forward: Bool) {
+        // Modal pages (like Timer and Calendar) only open when clicked, not via swipe.
+        if selectedTabModule?.tab?.style == .page { return }
+
+        let pages = navigablePages
+        guard pages.count > 1 else { return }
+        let currentIndex = pages.firstIndex { $0.map { ObjectIdentifier($0) } == selectedTab } ?? 0
+        let nextIndex: Int
+        if forward {
+            nextIndex = currentIndex + 1 < pages.count ? currentIndex + 1 : 0
+        } else {
+            nextIndex = currentIndex - 1 >= 0 ? currentIndex - 1 : pages.count - 1
+        }
+        select(tab: pages[nextIndex])
+    }
+
     /// A file is being dragged onto the notch: open whichever tab takes file drops.
     func showDropTarget() {
         guard let target = tabModules.first(where: { $0.acceptsFileDrops }) else { return }
