@@ -126,7 +126,6 @@ private struct MonthStrip: View {
                 .padding(.horizontal, edgePadding)
                 .scrollTargetLayout()
             }
-            .scrollTargetBehavior(.viewAligned)
             .scrollPosition(id: $centeredDay, anchor: .center)
             .overlay(alignment: .center) {
                 Rectangle()
