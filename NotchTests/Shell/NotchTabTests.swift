@@ -84,6 +84,59 @@ struct NotchTabTests {
         model.expand()
         #expect(!model.hoverIsTall(pointerInTallShape: true))
     }
+
+    @Test func tabNavigationForwardAndBackwardInVisualOrder() {
+        let model = model()
+        model.expand()
+        #expect(model.selectedTab == nil)
+
+        // Forward: Home -> Shelf -> Notes -> Calculator -> Mirror
+        model.navigateTab(forward: true)
+        #expect(model.selectedTabModule === model.shelf)
+
+        model.navigateTab(forward: true)
+        #expect(model.selectedTabModule === model.notes)
+
+        model.navigateTab(forward: true)
+        #expect(model.selectedTabModule === model.calculator)
+
+        model.navigateTab(forward: true)
+        #expect(model.selectedTabModule === model.mirror)
+
+        // Stopping at right edge
+        model.navigateTab(forward: true)
+        #expect(model.selectedTabModule === model.mirror)
+
+        // Backward: Mirror -> Calculator -> Notes -> Shelf -> Home
+        model.navigateTab(forward: false)
+        #expect(model.selectedTabModule === model.calculator)
+
+        model.navigateTab(forward: false)
+        #expect(model.selectedTabModule === model.notes)
+
+        model.navigateTab(forward: false)
+        #expect(model.selectedTabModule === model.shelf)
+
+        model.navigateTab(forward: false)
+        #expect(model.selectedTab == nil)
+
+        // Stopping at left edge
+        model.navigateTab(forward: false)
+        #expect(model.selectedTab == nil)
+    }
+
+    @Test func modalPagesDoNotNavigateWithSwipe() {
+        let model = model()
+        model.expand()
+        model.select(tab: model.timer)
+        #expect(model.selectedTabModule === model.timer)
+
+        model.navigateTab(forward: true)
+        #expect(model.selectedTabModule === model.timer)
+
+        model.navigateTab(forward: false)
+        #expect(model.selectedTabModule === model.timer)
+    }
 }
 
 struct TabBarLayoutTests {

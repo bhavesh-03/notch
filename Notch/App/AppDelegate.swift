@@ -345,7 +345,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 /// Accumulates trackpad scrollWheel deltas to trigger discrete horizontal swipe navigation.
-private final class SwipeTracker {
+final class SwipeTracker {
     private var accumulatedX: CGFloat = 0
     private var accumulatedY: CGFloat = 0
     private var hasTriggeredInCurrentGesture = false

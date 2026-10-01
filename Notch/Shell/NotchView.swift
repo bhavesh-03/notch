@@ -485,14 +485,7 @@ private struct TabLabelStyle: LabelStyle {
     }
 }
 
-private struct HapticFeedbackEnabledKey: EnvironmentKey {
-    static let defaultValue = true
-}
-
 extension EnvironmentValues {
-    var hapticFeedbackEnabled: Bool {
-        get { self[HapticFeedbackEnabledKey.self] }
-        set { self[HapticFeedbackEnabledKey.self] = newValue }
-    }
+    @Entry var hapticFeedbackEnabled: Bool = true
 }
 
