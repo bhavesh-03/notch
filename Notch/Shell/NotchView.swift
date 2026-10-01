@@ -75,6 +75,7 @@ struct NotchView: View {
             .environment(\.notchAccent, viewModel.settings.accent.color)
             .environment(\.timerPresets, viewModel.settings.showsTimerPresets ? viewModel.settings.timerPresets.map { $0 * 60 } : [])
             .environment(\.hapticFeedbackEnabled, viewModel.settings.hapticFeedbackEnabled)
+            .environment(\.terminalFontSize, viewModel.settings.terminalFontSize)
             .contextMenu { appMenu }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }

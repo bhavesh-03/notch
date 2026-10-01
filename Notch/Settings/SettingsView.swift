@@ -4,7 +4,7 @@ import SwiftUI
 /// left, controls on the right, explanations under each section. The window shows them as toolbar
 /// tabs (see `SettingsWindowController`).
 enum SettingsTab: CaseIterable {
-    case features, home, look, behavior, timer
+    case features, home, look, behavior, timer, terminal
 
     var title: String {
         switch self {
@@ -13,6 +13,7 @@ enum SettingsTab: CaseIterable {
         case .look: "Look"
         case .behavior: "Behavior"
         case .timer: "Timer"
+        case .terminal: "Terminal"
         }
     }
 
@@ -23,6 +24,7 @@ enum SettingsTab: CaseIterable {
         case .look: "paintbrush"
         case .behavior: "cursorarrow.motionlines"
         case .timer: "timer"
+        case .terminal: "terminal"
         }
     }
 
@@ -34,6 +36,7 @@ enum SettingsTab: CaseIterable {
         case .look: CGSize(width: 500, height: 440)
         case .behavior: CGSize(width: 500, height: 492)
         case .timer: CGSize(width: 500, height: 568)
+        case .terminal: CGSize(width: 500, height: 220)
         }
     }
 
@@ -46,6 +49,7 @@ enum SettingsTab: CaseIterable {
             case .look: LookSettings(settings: settings)
             case .behavior: BehaviorSettings(settings: settings)
             case .timer: TimerSettings(settings: settings)
+            case .terminal: TerminalSettings(settings: settings)
             }
         }
         .formStyle(.grouped)
@@ -449,6 +453,26 @@ private struct FeatureRow: View {
         .opacity(isOn ? 1 : 0.55)
     }
 }
+
+struct TerminalSettings: View {
+    @Bindable var settings: NotchSettings
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Font Size") {
+                    SteppedSlider(value: $settings.terminalFontSize, in: NotchSettings.terminalFontSizeRange, step: 1) {
+                        "\(Int($0)) pt"
+                    }
+                }
+            } footer: {
+                Text("The font size used for the terminal tab.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
 
 #Preview("Look") {
     SettingsTab.look.view(settings: .ephemeral())
