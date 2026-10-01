@@ -234,6 +234,20 @@ struct NotchView: View {
                         iconButton(tab: tab, module: module)
                     }
                 }
+
+                if viewModel.settings.showsSettingsButton {
+                    Button {
+                        viewModel.onOpenSettings?()
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .font(.caption.weight(.medium))
+                            .frame(width: 24, height: 22)
+                            .foregroundStyle(.white.opacity(0.55))
+                            .glassControl(in: Capsule())
+                            .contentShape(Capsule())
+                    }
+                    .help("Settings")
+                }
             }
             .padding(.trailing, 22)
         }
