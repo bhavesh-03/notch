@@ -116,7 +116,7 @@ final class NotchSettings {
         hoverDelay = (defaults.object(forKey: Keys.hoverDelay) as? Double)?.clamped(to: Self.hoverDelayRange) ?? 0
         animationSpeed = defaults.string(forKey: Keys.animationSpeed).flatMap(AnimationSpeed.init(rawValue:)) ?? .standard
         swipeNavigationEnabled = defaults.object(forKey: Keys.swipeNavigationEnabled) as? Bool ?? true
-        hapticFeedbackEnabled = defaults.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? true
+        hapticFeedbackEnabled = defaults.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? false
         showsSettingsButton = defaults.object(forKey: Keys.showsSettingsButton) as? Bool ?? true
         mutedPopUps = Set(Self.features(forKey: Keys.mutedPopUps, in: defaults))
         homeLayout = defaults.data(forKey: Keys.homeLayout).flatMap { try? JSONDecoder().decode(HomeLayout.self, from: $0) } ?? .default

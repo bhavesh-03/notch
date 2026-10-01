@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuTrackingTasks: [Task<Void, Never>] = []
     private var dragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
     private let notifications = NotificationService()
+    private var isTrackingSwipeGesture = false
 
     override init() {
         // Before the settings load, so they load what the sandboxed version saved.
@@ -215,14 +216,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard viewModel.selectedTabModule?.tab?.style != .page else { return }
 
         let mouse = NSEvent.mouseLocation
-        let expandedRect = viewModel.geometry.expandedRect(withHeadline: viewModel.isTall)
-        guard expandedRect.contains(mouse) else { return }
+        let swipeStartRect = viewModel.geometry.panelRect
+
+        if event.phase == .began {
+            // Use the full panel, not the currently visible shape, so short pages can still start a swipe.
+            guard swipeStartRect.contains(mouse) else { return }
+            isTrackingSwipeGesture = true
+        }
+
+        guard isTrackingSwipeGesture else { return }
 
         swipeTracker.handleScrollWheel(event) { [weak viewModel] swipedLeft in
             guard let viewModel else { return }
             withAnimation(NotchMotion.earHandover(reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion, speed: viewModel.settings.animationSpeed.multiplier)) {
                 viewModel.navigateTab(forward: swipedLeft)
             }
+        }
+
+        if event.phase == .ended || event.phase == .cancelled {
+            isTrackingSwipeGesture = false
         }
     }
 

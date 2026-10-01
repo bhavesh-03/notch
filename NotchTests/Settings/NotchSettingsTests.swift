@@ -18,6 +18,10 @@ struct NotchSettingsTests {
         #expect(settings.hiddenFeatures.isEmpty)
     }
 
+    @Test func hapticsAreOffByDefault() {
+        #expect(settings().hapticFeedbackEnabled == false)
+    }
+
     @Test func hidingAndShowingAFeature() {
         let settings = settings()
         settings.setVisible(.calendar, false)
