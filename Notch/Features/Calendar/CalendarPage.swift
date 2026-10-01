@@ -92,37 +92,81 @@ private struct MonthStrip: View {
     @Binding var selected: Date
     let busyDays: Set<Date>
     @Environment(\.notchAccent) private var accent
+    @Environment(\.hapticFeedbackEnabled) private var hapticEnabled
+
+    private static let scrollSpace = "MonthStripScroll"
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 4) {
-                    ForEach(month.days(), id: \.self) { day in
-                        let isSelected = day == selected
-                        let isToday = Calendar.current.isDateInToday(day)
-                        VStack(spacing: 3) {
-                            Text(day.formatted(.dateTime.weekday(.narrow)))
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(isSelected ? .black.opacity(0.6) : .white.opacity(0.4))
-                            Text(day.formatted(.dateTime.day()))
-                                .font(.system(size: 15, weight: isSelected || isToday ? .bold : .medium))
-                                .monospacedDigit()
-                                .foregroundStyle(isSelected ? .black : isToday ? accent : .white)
-                            Circle()
-                                .fill(busyDays.contains(day) ? (isSelected ? .black.opacity(0.6) : accent) : .clear)
-                                .frame(width: 4, height: 4)
+        GeometryReader { outer in
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 4) {
+                        ForEach(month.days(), id: \.self) { day in
+                            let isSelected = day == selected
+                            let isToday = Calendar.current.isDateInToday(day)
+                            VStack(spacing: 3) {
+                                Text(day.formatted(.dateTime.weekday(.narrow)))
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(isSelected ? .black.opacity(0.6) : .white.opacity(0.4))
+                                Text(day.formatted(.dateTime.day()))
+                                    .font(.system(size: 15, weight: isSelected || isToday ? .bold : .medium))
+                                    .monospacedDigit()
+                                    .foregroundStyle(isSelected ? .black : isToday ? accent : .white)
+                                Circle()
+                                    .fill(busyDays.contains(day) ? (isSelected ? .black.opacity(0.6) : accent) : .clear)
+                                    .frame(width: 4, height: 4)
+                            }
+                            .frame(width: 34, height: 46)
+                            .background(isSelected ? (isToday ? accent : .white) : .white.opacity(0.06), in: .rect(cornerRadius: 10, style: .continuous))
+                            .background(frameReader(for: day))
+                            .id(day)
+                            .onTapGesture { withAnimation(.snappy) { selected = day } }
                         }
-                        .frame(width: 34, height: 46)
-                        .background(isSelected ? (isToday ? accent : .white) : .white.opacity(0.06), in: .rect(cornerRadius: 10, style: .continuous))
-                        .id(day)
-                        .onTapGesture { withAnimation(.snappy) { selected = day } }
+                    }
+                    .padding(.horizontal, max(0, (outer.size.width - 34) / 2))
+                }
+                .coordinateSpace(name: Self.scrollSpace)
+                .overlay(alignment: .center) {
+                    Rectangle()
+                        .fill(.white.opacity(0.16))
+                        .frame(width: 1, height: 18)
+                }
+                .onAppear { proxy.scrollTo(selected, anchor: .center) }
+                .onChange(of: selected) { withAnimation(.snappy) { proxy.scrollTo(selected, anchor: .center) } }
+                .onPreferenceChange(DayFrameKey.self) { frames in
+                    guard let centered = Self.centeredDay(in: frames, width: outer.size.width), centered != selected else { return }
+                    selected = centered
+                    if hapticEnabled {
+                        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
                     }
                 }
             }
-            .onAppear { proxy.scrollTo(selected, anchor: .center) }
-            .onChange(of: selected) { withAnimation(.snappy) { proxy.scrollTo(selected, anchor: .center) } }
         }
         .frame(height: 46)
+    }
+
+    private func frameReader(for day: Date) -> some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: DayFrameKey.self,
+                value: [day: proxy.frame(in: .named(Self.scrollSpace))]
+            )
+        }
+    }
+
+    private static func centeredDay(in frames: [Date: CGRect], width: CGFloat) -> Date? {
+        let center = width / 2
+        return frames.min { lhs, rhs in
+            abs(lhs.value.midX - center) < abs(rhs.value.midX - center)
+        }?.key
+    }
+}
+
+private struct DayFrameKey: PreferenceKey {
+    static var defaultValue: [Date: CGRect] = [:]
+
+    static func reduce(value: inout [Date: CGRect], nextValue: () -> [Date: CGRect]) {
+        value.merge(nextValue(), uniquingKeysWith: { $1 })
     }
 }
 
