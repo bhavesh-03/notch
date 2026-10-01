@@ -179,7 +179,7 @@ final class NotchViewModel {
         if !isHovered {
             isHovered = true
             if !isExpanded && settings.hapticFeedbackEnabled {
-                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+                NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
             }
         }
 

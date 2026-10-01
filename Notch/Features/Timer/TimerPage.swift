@@ -242,7 +242,7 @@ struct DurationRuler: View {
             if value != seconds { seconds = value }
             glow(at: value)
             if hapticEnabled, oldValue != 0 {
-                NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .default)
+                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
             }
         }
         .onChange(of: seconds) { _, value in
@@ -251,7 +251,6 @@ struct DurationRuler: View {
             step = Self.step(for: value)
             withAnimation(.snappy) { position = value }
         }
-        .sensoryFeedback(.selection, trigger: selection)
         .sensoryFeedback(.levelChange, trigger: isFine)
     }
 
