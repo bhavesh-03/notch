@@ -95,7 +95,7 @@ final class NotchViewModel {
         return [nil] + tabs + buttons
     }
 
-    /// Moves to the next (forward = true) or previous (forward = false) tab, wrapping at edges.
+    /// Moves to the next (forward = true) or previous (forward = false) tab, stopping at edges.
     func navigateTab(forward: Bool) {
         // Modal pages (like Timer and Calendar) only open when clicked, not via swipe.
         if selectedTabModule?.tab?.style == .page { return }
@@ -103,12 +103,8 @@ final class NotchViewModel {
         let pages = navigablePages
         guard pages.count > 1 else { return }
         let currentIndex = pages.firstIndex { $0.map { ObjectIdentifier($0) } == selectedTab } ?? 0
-        let nextIndex: Int
-        if forward {
-            nextIndex = currentIndex + 1 < pages.count ? currentIndex + 1 : 0
-        } else {
-            nextIndex = currentIndex - 1 >= 0 ? currentIndex - 1 : pages.count - 1
-        }
+        let nextIndex = forward ? currentIndex + 1 : currentIndex - 1
+        guard pages.indices.contains(nextIndex) else { return }
         select(tab: pages[nextIndex])
     }
 
