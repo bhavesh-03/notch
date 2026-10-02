@@ -51,7 +51,7 @@ final class TerminalSession {
     func start() {
         guard !isRunning else { return }
         dataBuffer = Data()
-        isWebReady = false
+        // A restarted shell reuses the already loaded web view.
 
         var master: Int32 = 0
         var slave: Int32 = 0
@@ -77,9 +77,10 @@ final class TerminalSession {
         env["COLORTERM"] = "truecolor"
         p.environment = env
 
-        p.terminationHandler = { [weak self] _ in
+        p.terminationHandler = { [weak self] terminated in
             Task { @MainActor [weak self] in
-                self?.isRunning = false
+                guard let self, self.process === terminated else { return }
+                self.isRunning = false
             }
         }
 
@@ -127,7 +128,6 @@ final class TerminalSession {
     }
 
     func reset() {
-        isWebReady = false
         dataBuffer = Data()
         masterHandle?.readabilityHandler = nil
         process?.terminate()

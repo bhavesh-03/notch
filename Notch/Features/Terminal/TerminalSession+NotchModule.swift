@@ -176,24 +176,13 @@ struct TerminalWebView: NSViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.setValue(false, forKey: "drawsBackground") // Transparent background
 
-        // Locate the xterm/ bundle directory (source-tree path via #file works in dev builds)
-        let xtermDir: URL = {
-            // 1. App bundle (Release / production)
-            if let url = Bundle.main.url(forResource: "xterm", withExtension: nil) {
-                return url
-            }
-            // 2. Source-tree (Debug / local builds)
-            return URL(fileURLWithPath: #file)
-                .deletingLastPathComponent()
-                .appendingPathComponent("xterm")
-        }()
-
-        // Write the HTML string into a temp file inside the xterm folder so that
-        // loadFileURL can grant read access to the whole folder (needed for xterm.js,
-        // xterm.css, xterm-addon-fit.js to resolve as relative URLs).
-        let htmlURL = xtermDir.appendingPathComponent("terminal.html")
-        try? terminalHTMLString.write(to: htmlURL, atomically: true, encoding: .utf8)
-        webView.loadFileURL(htmlURL, allowingReadAccessTo: xtermDir)
+        // Xcode may flatten synchronized-folder resources into Resources.
+        // Read the shipped HTML directly; never modify a signed app bundle.
+        let htmlURL = Bundle.main.url(forResource: "terminal", withExtension: "html", subdirectory: "xterm")
+            ?? Bundle.main.url(forResource: "terminal", withExtension: "html")
+            ?? URL(fileURLWithPath: #file).deletingLastPathComponent()
+                .appendingPathComponent("xterm/terminal.html")
+        webView.loadFileURL(htmlURL, allowingReadAccessTo: htmlURL.deletingLastPathComponent())
 
         context.coordinator.webView = webView
         DispatchQueue.main.async { self.webViewRef = webView }
