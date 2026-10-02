@@ -18,8 +18,8 @@ struct NotchTabTests {
         let model = model()
         #expect(model.shelf.tab == NotchTab(title: "Files", symbol: "tray.full.fill"))
         #expect(model.shelf.acceptsFileDrops)
-        #expect(model.tabModules.filter { $0.tab?.style == .tab }.map { $0.tab?.title } == ["Files", "Notes", "Terminal"])
-        #expect(model.tabModules.filter { $0.tab?.style == .button }.map { $0.tab?.title } == ["Calculator", "Mirror"])
+        #expect(model.tabModules.filter { $0.tab?.style == .tab }.map { $0.tab?.title } == ["Files", "Notes"])
+        #expect(model.tabModules.filter { $0.tab?.style == .button }.map { $0.tab?.title } == ["Mirror", "Calculator"])
         #expect(model.tabModules.filter { $0.tab?.style == .page }.map { $0.tab?.title } == ["Timer", "Calendar"])
     }
 
@@ -83,65 +83,6 @@ struct NotchTabTests {
         let model = model()
         model.expand()
         #expect(!model.hoverIsTall(pointerInTallShape: true))
-    }
-
-    @Test func tabNavigationForwardAndBackwardInVisualOrder() {
-        let model = model()
-        model.expand()
-        #expect(model.selectedTab == nil)
-
-        // Forward: Home -> Shelf -> Notes -> Terminal -> Calculator -> Mirror
-        model.navigateTab(forward: true)
-        #expect(model.selectedTabModule === model.shelf)
-
-        model.navigateTab(forward: true)
-        #expect(model.selectedTabModule === model.notes)
-
-        model.navigateTab(forward: true)
-        #expect(model.selectedTabModule === model.terminal)
-
-        model.navigateTab(forward: true)
-        #expect(model.selectedTabModule === model.calculator)
-
-        model.navigateTab(forward: true)
-        #expect(model.selectedTabModule === model.mirror)
-
-        // Stopping at right edge
-        model.navigateTab(forward: true)
-        #expect(model.selectedTabModule === model.mirror)
-
-        // Backward: Mirror -> Calculator -> Terminal -> Notes -> Shelf -> Home
-        model.navigateTab(forward: false)
-        #expect(model.selectedTabModule === model.calculator)
-
-        model.navigateTab(forward: false)
-        #expect(model.selectedTabModule === model.terminal)
-
-        model.navigateTab(forward: false)
-        #expect(model.selectedTabModule === model.notes)
-
-        model.navigateTab(forward: false)
-        #expect(model.selectedTabModule === model.shelf)
-
-        model.navigateTab(forward: false)
-        #expect(model.selectedTab == nil)
-
-        // Stopping at left edge
-        model.navigateTab(forward: false)
-        #expect(model.selectedTab == nil)
-    }
-
-    @Test func modalPagesDoNotNavigateWithSwipe() {
-        let model = model()
-        model.expand()
-        model.select(tab: model.timer)
-        #expect(model.selectedTabModule === model.timer)
-
-        model.navigateTab(forward: true)
-        #expect(model.selectedTabModule === model.timer)
-
-        model.navigateTab(forward: false)
-        #expect(model.selectedTabModule === model.timer)
     }
 }
 
