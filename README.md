@@ -22,7 +22,7 @@ Notch lives in the space around your camera. At rest it's just the notch, with a
 ## Features
 
 **At a glance**
-- **Now Playing** from any app — Music, Spotify, browsers, web apps — with controls, a live progress bar, and a switcher when several apps are playing.
+- **Now Playing** from any app — Music, Spotify, browsers, web apps — with controls, a progress bar you can drag to seek, and a switcher when several apps are playing.
 - **Volume & brightness** in the notch, replacing macOS's indicator.
 - **Devices**: an AirPods-style pop-up when Bluetooth devices connect, with left, right and case batteries.
 - **Pop-ups** for plugging in the charger, a finished timer, a starting meeting and a new track.
@@ -34,13 +34,13 @@ Notch lives in the space around your camera. At rest it's just the notch, with a
 **Tools**
 - **Timer** with an iOS-style ruler, presets and a notification when it ends.
 - **Calendar** with the day's events and **Join** for Meet, Zoom, Teams, FaceTime and Webex calls, laid out as a day strip or a month grid beside or above the events.
-- **Files**: a shelf to drop files on and drag them out again later.
+- **Files**: a shelf to drop files on and drag them out again later, with a button to clear it.
 - **Notes**: quick notes you type right in the notch.
 - **Calculator** with a keypad, live results and history.
 - **Mirror**: a quick look at your camera.
 
 **Yours to shape**
-- Choose which features appear, the order of their tabs, the notch's width, corners and accent color, hover delay, animation speed, and which pop-ups show.
+- Choose which features appear, the order of their tabs, the notch's width, corners and accent color, hover delay, animation speed, swipe navigation, haptic feedback, and which pop-ups show.
 - Liquid Glass on macOS 26 and later, Reduce Motion support, and it works on displays without a notch too.
 
 ## Screenshots
@@ -100,7 +100,8 @@ Notch asks for each permission only when a feature first needs it, and every fea
 ## Using Notch
 
 - **Hover** over the notch to open it; move away to close it.
-- **Right-click** the open notch for **Edit Home**, **Settings…**, Launch at Login and Quit.
+- **Swipe** left or right with two fingers over the open notch to move between tabs.
+- **Right-click** the open notch for **Edit Home**, **Settings…**, Launch at Login and Quit, or click the gear in the tab bar for Settings.
 - **Edit Home**: drag widgets to move them, drag a corner to resize, tap **−** to remove, **Add Widget** to bring one back.
 - **Drag a file** toward the notch to drop it on the shelf.
 - **Tap** the timer or calendar widget to open its page.
