@@ -32,8 +32,11 @@ struct BehaviorSettingsTests {
         settings.hoverDelay = 0.3
         settings.animationSpeed = .relaxed
         settings.setShowsPopUp(for: .timer, false)
+        settings.swipeNavigationEnabled = false
+        settings.hapticFeedbackEnabled = true
         settings.resetBehavior()
         #expect(settings.hoverDelay == 0 && settings.animationSpeed == .standard)
+        #expect(settings.swipeNavigationEnabled && !settings.hapticFeedbackEnabled, "swiping on, haptics off, as on a new install")
         #expect(settings.showsPopUp(for: .timer))
         #expect(NotchSettings(defaults: defaults).showsPopUp(for: .timer), "the reset is saved too")
     }

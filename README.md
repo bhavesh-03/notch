@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version 1.2.1" src="https://img.shields.io/badge/version-1.2.1-orange">
+  <img alt="Version 1.3.1" src="https://img.shields.io/badge/version-1.3.1-orange">
   <img alt="macOS 14 or later" src="https://img.shields.io/badge/macOS-14%2B-black">
   <img alt="Swift 6 and SwiftUI" src="https://img.shields.io/badge/Swift-6-F05138">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"></a>
@@ -22,7 +22,7 @@ Notch lives in the space around your camera. At rest it's just the notch, with a
 ## Features
 
 **At a glance**
-- **Now Playing** from any app — Music, Spotify, browsers, web apps — with controls, a live progress bar, and a switcher when several apps are playing.
+- **Now Playing** from any app — Music, Spotify, browsers, web apps — with controls, a progress bar you can drag to seek, and a switcher when several apps are playing.
 - **Volume & brightness** in the notch, replacing macOS's indicator.
 - **Devices**: an AirPods-style pop-up when Bluetooth devices connect, with left, right and case batteries.
 - **Pop-ups** for plugging in the charger, a finished timer, a starting meeting and a new track.
@@ -33,14 +33,14 @@ Notch lives in the space around your camera. At rest it's just the notch, with a
 
 **Tools**
 - **Timer** with an iOS-style ruler, presets and a notification when it ends.
-- **Calendar** with a month strip, the day's events, and **Join** for Meet, Zoom, Teams, FaceTime and Webex calls.
-- **Files**: a shelf to drop files on and drag them out again later.
+- **Calendar** with the day's events and **Join** for Meet, Zoom, Teams, FaceTime and Webex calls, laid out as a day strip or a month grid beside or above the events.
+- **Files**: a shelf to drop files on and drag them out again later, with a button to clear it.
 - **Notes**: quick notes you type right in the notch.
 - **Calculator** with a keypad, live results and history.
 - **Mirror**: a quick look at your camera.
 
 **Yours to shape**
-- Choose which features appear and in what order, the notch's width, corners and accent color, hover delay, animation speed, and which pop-ups show.
+- Choose which features appear, the order of their tabs, the notch's width, corners and accent color, hover delay, animation speed, swipe navigation, haptic feedback, and which pop-ups show.
 - Liquid Glass on macOS 26 and later, Reduce Motion support, and it works on displays without a notch too.
 
 ## Screenshots
@@ -62,12 +62,25 @@ Notch lives in the space around your camera. At rest it's just the notch, with a
 
 ## Installation
 
-1. Download **Notch-1.2.1.dmg** from the [latest release](../../releases/latest).
+1. Download **Notch-1.3.1.dmg** from the [latest release](../../releases/latest).
 2. Open it and drag **Notch** into **Applications**.
 3. Open Notch from Applications.
 
-> [!NOTE]
-> Notch isn't notarized by Apple yet, so the first time you open it macOS says it can't verify the developer. Go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**. You only need to do this once.
+### First launch: "Notch" Not Opened
+
+Notch isn't notarized by Apple yet, so the first time you open it macOS shows **"Notch" Not Opened — Apple could not verify "Notch" is free of malware**. The app is fine; macOS just can't vouch for it. To open it:
+
+1. Click **Done**.
+2. Open **System Settings → Privacy & Security** and scroll to the bottom.
+3. Next to *"Notch" was blocked to protect your Mac*, click **Open Anyway**, then confirm with your password or Touch ID.
+
+You only need to do this once. The **Open Anyway** button appears for about an hour after the blocked attempt; if it's gone, open Notch again and it'll come back. (Right-click → Open no longer skips this check on recent macOS.)
+
+If you're comfortable with Terminal, this does the same in one step, by removing the "downloaded from the internet" flag:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Notch.app
+```
 
 To start Notch when you log in, hover over the notch, right-click it, and turn on **Launch at Login**.
 
@@ -87,7 +100,8 @@ Notch asks for each permission only when a feature first needs it, and every fea
 ## Using Notch
 
 - **Hover** over the notch to open it; move away to close it.
-- **Right-click** the open notch for **Edit Home**, **Settings…**, Launch at Login and Quit.
+- **Swipe** left or right with two fingers over the open notch to move between tabs.
+- **Right-click** the open notch for **Edit Home**, **Settings…**, Launch at Login and Quit, or click the gear in the tab bar for Settings.
 - **Edit Home**: drag widgets to move them, drag a corner to resize, tap **−** to remove, **Add Widget** to bring one back.
 - **Drag a file** toward the notch to drop it on the shelf.
 - **Tap** the timer or calendar widget to open its page.

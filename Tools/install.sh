@@ -9,7 +9,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BUILD_DIR="$ROOT/build"
+BUILD_DIR="$ROOT/build.noindex"   # ".noindex": Spotlight skips it, so it never offers this copy instead of the installed app
 DESTINATION="/Applications/Notch.app"
 
 # Every build gets a unique, increasing build number: the number of commits so far.

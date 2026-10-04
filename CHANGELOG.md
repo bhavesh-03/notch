@@ -2,6 +2,37 @@
 
 All notable changes to Notch. Versions follow [Semantic Versioning](https://semver.org): new features bump the minor version, fixes bump the patch version.
 
+## Unreleased
+
+### Added
+- **Seek in Now Playing:** tap or drag the progress bar to jump within a track, for players Notch can control.
+- **Swipe between tabs:** swipe left or right with two fingers over the open notch to move one tab at a time. Turn it off in Settings → Behavior.
+- **Haptic feedback** (off by default, in Settings → Behavior): a light trackpad tap when the pointer reaches the notch, and ticks while scrolling the timer's ruler or the calendar's day strip.
+- **Settings button** in the notch's tab bar, beside the camera buttons. Hide it in Settings → Look.
+- **Files:** a button to clear the shelf, and a remove button on each file.
+
+### Fixed
+- Tabs can be reordered again. Settings → Features has a **Tab Order** bar, a small copy of the notch's tab bar: drag Files and Notes, or Mirror and Calculator, sideways to change their order. The old drag-to-reorder list never moved anything.
+
+### Changed
+- The calendar's day strip works like a picker: scroll it and the day under the center marker is selected, and **Today** brings it back reliably.
+- Mirror is now the last tab button by default, after Calculator, so swiping through the tabs never turns the camera on by passing it. Existing tab orders are kept.
+- The Features list is only for turning features on and off, in a fixed order, since most features (like Battery or Volume & Brightness) have no tab to order.
+
+## 1.3.1 — 2026-10-02
+
+### Fixed
+- The battery in the ears and widgets shows the real level: while charging it was always drawn full (with a bolt), and on battery it moved in 25% steps. It's now drawn like the menu bar's battery: filled to the exact level, green with a bolt while charging, a plug when connected but not charging, red when low.
+
+## 1.3.0 — 2026-10-01
+
+### Added
+- **Calendar layouts:** choose how the calendar page looks in a new **Calendar** tab in Settings, with a live preview: **Day strip** (the month's days in a scrolling row), **Month beside** (a month grid next to the day's events) or **Month above** (a month grid over the events, in a taller notch).
+
+### Changed
+- The Calculator's icon is a monochrome calculator glyph like the other icons, instead of the Calculator app's colored icon.
+- The Settings window is titled **Notch Settings** instead of the selected tab's name, which read like the notch's own Home page.
+
 ## 1.2.1 — 2026-09-28
 
 ### Added

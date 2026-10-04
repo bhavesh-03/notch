@@ -8,4 +8,5 @@ xcuserdata/
 # Build output
 DerivedData/
 build/
+build.noindex/
 dist/
