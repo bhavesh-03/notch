@@ -1,4 +1,4 @@
-<!DMCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -121,13 +121,16 @@
         });
 
         function writeData(base64) {
+            const wasAtBottom = term.buffer.active.viewportY === term.buffer.active.baseY;
             const binary = atob(base64);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) {
                 bytes[i] = binary.charCodeAt(i);
             }
             term.write(bytes, () => {
-                try { term.scrollToBottom(); } catch(e) {}
+                if (wasAtBottom) {
+                    try { term.scrollToBottom(); } catch(e) {}
+                }
             });
         }
 

@@ -30,6 +30,10 @@ final class NotchSettings {
     var showsEars: Bool {
         didSet { save(showsEars, Keys.showsEars); onGeometryChanged?() }
     }
+    /// The calendar page's layout. Month above needs a taller notch, so it reports a geometry change.
+    var calendarLayout: CalendarLayout {
+        didSet { save(calendarLayout.rawValue, Keys.calendarLayout); onGeometryChanged?() }
+    }
 
     /// How long the pointer rests on the notch before it opens, in seconds (0 = instantly).
     var hoverDelay: Double {
@@ -118,10 +122,11 @@ final class NotchSettings {
         cornerRadius = (defaults.object(forKey: Keys.cornerRadius) as? Double)?.clamped(to: Self.cornerRadiusRange) ?? Self.defaultCornerRadius
         accent = defaults.string(forKey: Keys.accent).flatMap(NotchAccent.init(rawValue:)) ?? .orange
         showsEars = defaults.object(forKey: Keys.showsEars) as? Bool ?? true
+        calendarLayout = defaults.string(forKey: Keys.calendarLayout).flatMap(CalendarLayout.init(rawValue:)) ?? .strip
         hoverDelay = (defaults.object(forKey: Keys.hoverDelay) as? Double)?.clamped(to: Self.hoverDelayRange) ?? 0
         animationSpeed = defaults.string(forKey: Keys.animationSpeed).flatMap(AnimationSpeed.init(rawValue:)) ?? .standard
         swipeNavigationEnabled = defaults.object(forKey: Keys.swipeNavigationEnabled) as? Bool ?? true
-        hapticFeedbackEnabled = defaults.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? true
+        hapticFeedbackEnabled = defaults.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? false
         showsSettingsButton = defaults.object(forKey: Keys.showsSettingsButton) as? Bool ?? true
         mutedPopUps = Set(Self.features(forKey: Keys.mutedPopUps, in: defaults))
         homeLayout = defaults.data(forKey: Keys.homeLayout).flatMap { try? JSONDecoder().decode(HomeLayout.self, from: $0) } ?? .default
@@ -162,9 +167,18 @@ final class NotchSettings {
         saveFeatures()
     }
 
-    /// Same signature as `List`'s `onMove`, so the settings list can pass it straight through.
-    func moveFeatures(fromOffsets source: IndexSet, toOffset destination: Int) {
-        featureOrder.move(fromOffsets: source, toOffset: destination)
+    /// The shown features with a button on `side` of the camera, in tab bar order.
+    func tabs(on side: NotchFeature.TabSide) -> [NotchFeature] {
+        visibleFeatures.filter { $0.tabSide == side }
+    }
+
+    /// Moves `feature`'s tab to where `target`'s is, the way dropping one tab on another does.
+    /// Tabs only move within their side of the camera.
+    func moveTab(_ feature: NotchFeature, to target: NotchFeature) {
+        guard feature != target, let side = feature.tabSide, target.tabSide == side,
+              let from = featureOrder.firstIndex(of: feature),
+              let to = featureOrder.firstIndex(of: target) else { return }
+        featureOrder.move(fromOffsets: [from], toOffset: to > from ? to + 1 : to)
         saveFeatures()
     }
 
@@ -211,9 +225,15 @@ final class NotchSettings {
         hoverDelay = 0
         animationSpeed = .standard
         swipeNavigationEnabled = true
-        hapticFeedbackEnabled = true
+        hapticFeedbackEnabled = false
         mutedPopUps = []
         save([String](), Keys.mutedPopUps)
+    }
+
+    // MARK: - Calendar
+
+    func resetCalendar() {
+        calendarLayout = .strip
     }
 
     // MARK: - Timer
@@ -249,6 +269,7 @@ final class NotchSettings {
         static let cornerRadius = "settings.cornerRadius"
         static let accent = "settings.accent"
         static let showsEars = "settings.showsEars"
+        static let calendarLayout = "settings.calendarLayout"
         static let hoverDelay = "settings.hoverDelaySeconds"
         static let animationSpeed = "settings.animationSpeed"
         static let swipeNavigationEnabled = "settings.swipeNavigationEnabled"

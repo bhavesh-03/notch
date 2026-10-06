@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuTrackingTasks: [Task<Void, Never>] = []
     private var dragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
     private let notifications = NotificationService()
+    private var isTrackingSwipeGesture = false
 
     override init() {
         // Before the settings load, so they load what the sandboxed version saved.
@@ -215,14 +216,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard viewModel.selectedTabModule?.tab?.style != .page else { return }
 
         let mouse = NSEvent.mouseLocation
-        let expandedRect = viewModel.geometry.expandedRect(withHeadline: viewModel.isTall)
-        guard expandedRect.contains(mouse) else { return }
+        let swipeStartRect = viewModel.geometry.panelRect
+
+        if event.phase == .began {
+            // Use the full panel, not the currently visible shape, so short pages can still start a swipe.
+            guard swipeStartRect.contains(mouse) else { return }
+            isTrackingSwipeGesture = true
+        }
+
+        guard isTrackingSwipeGesture else { return }
 
         swipeTracker.handleScrollWheel(event) { [weak viewModel] swipedLeft in
             guard let viewModel else { return }
             withAnimation(NotchMotion.earHandover(reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion, speed: viewModel.settings.animationSpeed.multiplier)) {
                 viewModel.navigateTab(forward: swipedLeft)
             }
+        }
+
+        if event.phase == .ended || event.phase == .cancelled {
+            isTrackingSwipeGesture = false
         }
     }
 
@@ -243,9 +255,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         followMenuBar()
         
         let mouse = NSEvent.mouseLocation
-        let tallShape = viewModel.geometry.hoverTarget(isExpanded: true, hasHeadline: true, isDraggingFile: false)
-        let hoverIsTall = viewModel.hoverIsTall(pointerInTallShape: tallShape.contains(mouse))
-        let activeRect = viewModel.geometry.hoverTarget(isExpanded: viewModel.isExpanded, hasHeadline: hoverIsTall, isDraggingFile: isDraggingFile)
+        let geometry = viewModel.geometry
+        let height = viewModel.hoverHeight { geometry.hoverTarget(isExpanded: true, height: $0, isDraggingFile: false).contains(mouse) }
+        let activeRect = geometry.hoverTarget(isExpanded: viewModel.isExpanded, height: height, isDraggingFile: isDraggingFile)
         
         if activeRect.contains(mouse) {
             viewModel.pointerEntered(isDraggingFile: isDraggingFile)
@@ -265,6 +277,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var geometry = NotchGeometry(screen: screen)
         geometry.expandedWidth = settings.width.points
         geometry.showsEars = settings.showsEars && !menusReachEars
+        geometry.extraPageHeight = settings.calendarLayout == .above ? NotchGeometry.calendarMonthAboveExtra : 0
         return geometry
     }
     
@@ -333,7 +346,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 /// Accumulates trackpad scrollWheel deltas to trigger discrete horizontal swipe navigation.
-private final class SwipeTracker {
+final class SwipeTracker {
     private var accumulatedX: CGFloat = 0
     private var accumulatedY: CGFloat = 0
     private var hasTriggeredInCurrentGesture = false

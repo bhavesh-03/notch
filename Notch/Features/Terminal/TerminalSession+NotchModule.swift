@@ -84,6 +84,7 @@ struct TerminalPage: View {
                     .help("Clear Screen")
 
                     Button {
+                        webViewRef?.evaluateJavaScript("clearTerminal()", completionHandler: nil)
                         session.reset()
                     } label: {
                         Image(systemName: "arrow.clockwise")
@@ -185,9 +186,10 @@ struct TerminalWebView: NSViewRepresentable {
         webView.loadFileURL(htmlURL, allowingReadAccessTo: htmlURL.deletingLastPathComponent())
 
         context.coordinator.webView = webView
+        context.coordinator.fontSize = fontSize
         DispatchQueue.main.async { self.webViewRef = webView }
 
-        session.onDataReceived = { data in
+        context.coordinator.generation = session.attachWebView { data in
             let base64 = data.base64EncodedString()
             DispatchQueue.main.async {
                 webView.evaluateJavaScript("writeData('\(base64)')", completionHandler: nil)
@@ -198,6 +200,7 @@ struct TerminalWebView: NSViewRepresentable {
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
+        context.coordinator.fontSize = fontSize
         guard !webView.isLoading else { return }
         webView.evaluateJavaScript("term.options.fontSize = \(fontSize); doFit();", completionHandler: nil)
     }
@@ -206,8 +209,15 @@ struct TerminalWebView: NSViewRepresentable {
         Coordinator(session: session)
     }
 
+    static func dismantleNSView(_ webView: WKWebView, coordinator: Coordinator) {
+        coordinator.session.detachWebView(generation: coordinator.generation)
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "terminal")
+    }
+
     class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         let session: TerminalSession
+        var generation = 0
+        var fontSize: Double = 11
         weak var webView: WKWebView?
 
         init(session: TerminalSession) {
@@ -215,6 +225,7 @@ struct TerminalWebView: NSViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            webView.evaluateJavaScript("term.options.fontSize = \(fontSize); doFit();", completionHandler: nil)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak webView] in
                 guard let webView = webView as? FocusableWKWebView else { return }
                 webView.focusTerminal()
@@ -226,7 +237,7 @@ struct TerminalWebView: NSViewRepresentable {
                   let type = dict["type"] as? String else { return }
 
             if type == "ready" {
-                session.webViewDidBecomeReady()
+                session.webViewDidBecomeReady(generation: generation)
             } else if type == "data", let str = dict["data"] as? String {
                 session.sendData(str)
             } else if type == "resize", let cols = dict["cols"] as? Int, let rows = dict["rows"] as? Int {

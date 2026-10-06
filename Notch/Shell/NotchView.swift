@@ -15,7 +15,7 @@ struct NotchView: View {
     private var size: CGSize {
         switch viewModel.presentation {
         case .collapsed: geometry.collapsedRect.size
-        case .expanded: geometry.expandedSize(withHeadline: viewModel.isTall)
+        case .expanded: geometry.expandedSize(height: viewModel.expandedHeight)
         case .activity: geometry.activitySize
         }
     }
@@ -70,9 +70,10 @@ struct NotchView: View {
             .clipShape(notchShape)
             // Below the clip on purpose: `.animation` only animates what's above it. Above the clip,
             // the clip would jump to the new size while the shape animated inside it, hiding a shrink.
-            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.isTall)
+            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.expandedHeight)
             .animation(NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.settings.cornerRadius)
             .environment(\.notchAccent, viewModel.settings.accent.color)
+            .environment(\.calendarLayout, viewModel.settings.calendarLayout)
             .environment(\.timerPresets, viewModel.settings.showsTimerPresets ? viewModel.settings.timerPresets.map { $0 * 60 } : [])
             .environment(\.hapticFeedbackEnabled, viewModel.settings.hapticFeedbackEnabled)
             .environment(\.terminalFontSize, viewModel.settings.terminalFontSize)
@@ -215,7 +216,7 @@ struct NotchView: View {
     private var tabBar: some View {
         HStack(spacing: 0) {
             let labels = tabLabels
-            HStack(spacing: TabBarLayout.spacing) {
+            HStack(spacing: tabs(.tab).count >= 3 ? 1 : TabBarLayout.spacing) {
                 tabButton(title: "Home", symbol: "house.fill", module: nil, labels: labels)
                 ForEach(tabs(.tab).indices, id: \.self) { index in
                     let module = tabs(.tab)[index]
@@ -309,12 +310,13 @@ struct NotchView: View {
             Label(title, systemImage: symbol)
                 .labelStyle(TabLabelStyle(showsTitle: showsTitle))
                 .font(.caption.weight(.medium))
-                .padding(.horizontal, 9)
+                .padding(.horizontal, tabs(.tab).count >= 3 ? 5 : 9)
                 .padding(.vertical, 4)
                 .background { selectionPill(selected) }
                 .foregroundStyle(.white.opacity(selected ? 1 : 0.55))
                 .contentShape(Capsule())
         }
+        .help(title)
     }
 
     /// Toggles its page: opens it, or goes back to Home if it's already open.
@@ -324,8 +326,6 @@ struct NotchView: View {
             viewModel.select(tab: selected ? nil : module)
         } label: {
             NotchIcon(name: tab.symbol)
-                // An app icon keeps its colors; dimmed like the other icons when not selected.
-                .opacity(NotchIcon.isAppIcon(tab.symbol) && !selected ? 0.7 : 1)
                 .font(.caption.weight(.medium))
                 .frame(width: 24, height: 22)
                 .background { selectionPill(selected) }
@@ -502,14 +502,6 @@ private struct TabLabelStyle: LabelStyle {
     }
 }
 
-private struct HapticFeedbackEnabledKey: EnvironmentKey {
-    static let defaultValue = true
-}
-
 extension EnvironmentValues {
-    var hapticFeedbackEnabled: Bool {
-        get { self[HapticFeedbackEnabledKey.self] }
-        set { self[HapticFeedbackEnabledKey.self] = newValue }
-    }
+    @Entry var hapticFeedbackEnabled: Bool = false
 }
-

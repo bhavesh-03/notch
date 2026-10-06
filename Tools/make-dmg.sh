@@ -14,7 +14,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BUILD_DIR="$ROOT/build"
+BUILD_DIR="$ROOT/build.noindex"   # ".noindex": Spotlight skips it, so it never offers this copy instead of the installed app
 DIST_DIR="$ROOT/dist"
 BUILD_NUMBER="$(git -C "$ROOT" rev-list --count HEAD)"
 
