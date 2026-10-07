@@ -9,7 +9,7 @@ final class TerminalSession {
 
     // MARK: - Published state
     private(set) var isRunning = false
-    
+
     // Callbacks for the UI
     @ObservationIgnored private var onDataReceived: ((Data) -> Void)?
     @ObservationIgnored private var outputHistory = Data()
@@ -49,7 +49,7 @@ final class TerminalSession {
             }
         }
     }
-    
+
     // MARK: - Private
     @ObservationIgnored private var process: Process?
     @ObservationIgnored private var masterHandle: FileHandle?
@@ -80,7 +80,7 @@ final class TerminalSession {
         p.standardInput = sHandle
         p.standardOutput = sHandle
         p.standardError = sHandle
-        
+
         var env = ProcessInfo.processInfo.environment
         env["TERM"] = "xterm-256color"
         env["COLORTERM"] = "truecolor"
@@ -99,7 +99,7 @@ final class TerminalSession {
             print("Failed to start shell: \(error)")
             return
         }
-        
+
         sHandle.closeFile()
 
         process = p

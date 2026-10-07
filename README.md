@@ -110,7 +110,7 @@ Notch asks for each permission only when a feature first needs it, and every fea
 
 ## Privacy
 
-Everything stays on your Mac. Notch has no accounts, no analytics and no network requests of its own. The camera runs only while the mirror is open, and nothing is recorded. Notes and settings are stored locally in `~/Library/Application Support/com.bhavesh.Notch` and the app's preferences.
+Everything stays on your Mac. Notch has no accounts, no analytics and no network requests of its own. The camera runs only while the mirror is open, and nothing is recorded. Notes and settings are stored locally in `~/Library/Application Support/com.vinzi.Notch` and the app's preferences.
 
 ## Requirements
 

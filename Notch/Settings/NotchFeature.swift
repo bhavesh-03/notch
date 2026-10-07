@@ -65,7 +65,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .levels: "speaker.wave.2.fill"
         case .devices: "airpods.pro"
         case .notes: "note.text"
-        case .calculator: NotchIcon.calculator
+        case .calculator: NotchIcon.calculator   // our own glyph: SF Symbols has no calculator
         case .terminal: "terminal"
         }
     }

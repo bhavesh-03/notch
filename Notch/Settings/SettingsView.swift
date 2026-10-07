@@ -766,7 +766,6 @@ struct TerminalSettings: View {
     }
 }
 
-
 #Preview("Look") {
     SettingsTab.look.view(settings: .ephemeral())
 }

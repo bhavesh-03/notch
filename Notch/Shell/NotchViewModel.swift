@@ -137,7 +137,7 @@ final class NotchViewModel {
     /// a hidden feature disappears from the ears, Home, the tabs and activities alike.
     var modules: [any NotchModule] {
         let all = allModules
-         return settings.visibleFeatures.compactMap { feature in all.first { $0.feature == feature } }
+        return settings.visibleFeatures.compactMap { feature in all.first { $0.feature == feature } }
     }
 
     @ObservationIgnored private let reduceMotion: () -> Bool
