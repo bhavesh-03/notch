@@ -33,7 +33,7 @@ struct ClipboardMonitorTests {
         let pasteboard = NSPasteboard.withUniqueName()
         defer { pasteboard.releaseGlobally() }
         let png = try #require(Data(base64Encoded:
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7ioAAAAASUVORK5CYII="))
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP43+DwHwAHAAK/K9fH4gAAAABJRU5ErkJggg=="))
         let pngType = NSPasteboard.PasteboardType("public.png")
         pasteboard.declareTypes([pngType, .string], owner: nil)
         pasteboard.setData(png, forType: pngType)
@@ -46,10 +46,14 @@ struct ClipboardMonitorTests {
         #expect(image.size == NSSize(width: 1, height: 1))
     }
 
-    @Test func readsAllCopiedFileURLs() {
+    @Test func readsAllCopiedFileURLs() throws {
         let pasteboard = NSPasteboard.withUniqueName()
         defer { pasteboard.releaseGlobally() }
-        let urls = [URL(fileURLWithPath: "/tmp/First.txt"), URL(fileURLWithPath: "/tmp/Second.txt")]
+        let folder = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let urls = ["First.txt", "Second.txt"].map { folder.appendingPathComponent($0) }
+        for url in urls { try Data("copied".utf8).write(to: url) }
         pasteboard.clearContents()
         #expect(pasteboard.writeObjects(urls.map { $0 as NSURL }))
 
