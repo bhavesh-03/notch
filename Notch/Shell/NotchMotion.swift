@@ -55,6 +55,10 @@ enum NotchMotion {
         .asymmetric(insertion: contentIn(reduceMotion: reduceMotion, speed: speed), removal: contentOut(speed: speed))
     }
 
+    static func shelf(reduceMotion: Bool, speed: Double = 1) -> Animation {
+        reduceMotion ? .easeInOut(duration: 0.16) : .smooth(duration: 0.26).speed(speed)
+    }
+
     /// The notch opening on hover and closing when the pointer leaves.
     static func expandCollapse(speed: Double = 1) -> Animation {
         .snappy.speed(speed)

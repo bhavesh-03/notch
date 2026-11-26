@@ -36,6 +36,7 @@ extension NotchFeature {
         case .calendar: "Meeting starting"
         case .nowPlaying: "New track"
         case .devices: "Device connected"
+        case .clipboard: "Clipboard preview"
         case .files, .mirror, .systemStats, .levels, .notes, .calculator, .terminal: nil
         }
     }

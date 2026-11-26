@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import Testing
 import UniformTypeIdentifiers
 @testable import Notch
@@ -110,7 +110,7 @@ struct ShelfStoreTests {
         let item = try #require(shelf.items.first)
         #expect(item.isOwnedCopy)
         #expect(item.name == "Screenshot 2026-09-27.png")
-        #expect(item.url.deletingLastPathComponent().standardizedFileURL == copies.standardizedFileURL)
+        #expect(item.url.deletingLastPathComponent().deletingLastPathComponent().standardizedFileURL == copies.standardizedFileURL)
         #expect(FileManager.default.fileExists(atPath: item.url.path))
     }
 
@@ -138,14 +138,15 @@ struct ShelfStoreTests {
         #expect(shelf.items.first?.isOwnedCopy == false)
     }
 
-    @Test func copiesWithTheSameNameGetNumbered() async throws {
+    @Test func copiesWithTheSameNameStaySeparateWithoutRenaming() async throws {
         let shelf = store()
         for byte: UInt8 in [1, 2] {
             let provider = pngProvider(Data([byte]))
             provider.suggestedName = "Shot"
             await shelf.add([provider])
         }
-        #expect(shelf.items.map(\.name) == ["Shot.png", "Shot 2.png"])
+        #expect(shelf.items.map(\.name) == ["Shot.png", "Shot.png"])
+        #expect(Set(shelf.items.map(\.url)).count == 2)
     }
 
     @Test func version1ShelvesAreMigrated() throws {
@@ -174,24 +175,31 @@ struct ShelfStoreTests {
         #expect(FileManager.default.fileExists(atPath: moved.path))
     }
 
-    @Test func draggingAnItemOutAndBackInDoesNotDuplicateIt() async throws {
+    @Test func clipboardExportsAFolderAndMultipleFilesWithOriginalNames() throws {
         let shelf = store()
-        shelf.add([try file("report.txt")])
-        let item = try #require(shelf.items.first)
+        let a = try file("File one.txt")
+        let directory = folder.appendingPathComponent("Project files", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let b = try file("File two.txt")
+        shelf.add([a, directory, b])
 
-        await shelf.add([ShelfStore.dragProvider(for: item)])
-
-        #expect(shelf.items.count == 1)
+        let pasteboard = NSPasteboard.withUniqueName()
+        defer { pasteboard.releaseGlobally() }
+        #expect(ShelfFileTransfer.copy(shelf.items, to: pasteboard))
+        let pasted = try #require(pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL])
+        #expect(pasted.map(\.lastPathComponent) == ["File one.txt", "Project files", "File two.txt"])
+        #expect(zip(pasted, shelf.items).allSatisfy { ShelfStore.isSameFile($0, $1.url) })
+        #expect(shelf.items.count == 3)
     }
 
-    @Test func draggingAnOwnedCopyOutAndBackInDoesNotDuplicateIt() async throws {
+    @Test func nativeDragUsesFileURLsWithTheirOriginalNames() throws {
         let shelf = store()
-        await shelf.add([pngProvider(Data([1, 2, 3]))])
-        let copy = try #require(shelf.items.first)
+        shelf.add([try file("File one.txt"), try file("File two.txt")])
 
-        await shelf.add([ShelfStore.dragProvider(for: copy)])
-
-        #expect(shelf.items.count == 1)
+        let payload = ShelfFileTransfer.dragItems(shelf.items, at: .zero).compactMap {
+            $0.item as? NSURL
+        }
+        #expect(payload.map(\.lastPathComponent) == ["File one.txt", "File two.txt"])
     }
 
     @Test func differentSpellingsOfOnePathAreTheSameFile() throws {
@@ -212,7 +220,9 @@ struct ShelfStoreTests {
     /// The real round trip: Finder copies the item to the Desktop, and that copy is dropped back.
     @Test func aFinderCopyOfAShelvedFileIsADuplicate() async throws {
         let original = try file("report.txt")
-        let desktopCopy = folder.appendingPathComponent("Desktop copy of report.txt")
+        let desktop = folder.appendingPathComponent("Desktop", isDirectory: true)
+        try FileManager.default.createDirectory(at: desktop, withIntermediateDirectories: true)
+        let desktopCopy = desktop.appendingPathComponent("report.txt")
         try FileManager.default.copyItem(at: original, to: desktopCopy)
 
         let shelf = store()
@@ -230,6 +240,15 @@ struct ShelfStoreTests {
         #expect(shelf.items.count == 1)
         let copies = try FileManager.default.contentsOfDirectory(atPath: copies.path)
         #expect(copies.count == 1, "the rejected copy is cleaned up")
+    }
+
+    @Test func differentNamesWithIdenticalContentsAreBothKept() throws {
+        let original = try file("a.txt")
+        let copy = folder.appendingPathComponent("b.txt")
+        try FileManager.default.copyItem(at: original, to: copy)
+        let shelf = store()
+        shelf.add([original, copy])
+        #expect(shelf.items.map(\.name) == ["a.txt", "b.txt"])
     }
 
     @Test func differentFilesOfTheSameSizeAreBothKept() {

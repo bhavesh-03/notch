@@ -16,7 +16,8 @@ struct NotchView: View {
         switch viewModel.presentation {
         case .collapsed: geometry.collapsedRect.size
         case .expanded: geometry.expandedSize(height: viewModel.expandedHeight)
-        case .activity: geometry.activitySize
+        case .activity(let module):
+            geometry.activitySize(detailHeight: module.feature == .clipboard ? 56 : NotchGeometry.activityDetailHeight)
         }
     }
 
@@ -70,7 +71,7 @@ struct NotchView: View {
             .clipShape(notchShape)
             // Below the clip on purpose: `.animation` only animates what's above it. Above the clip,
             // the clip would jump to the new size while the shape animated inside it, hiding a shrink.
-            .animation(NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.expandedHeight)
+            .animation(pageResizeAnimation, value: viewModel.expandedHeight)
             .animation(NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed), value: viewModel.settings.cornerRadius)
             .environment(\.notchAccent, viewModel.settings.accent.color)
             .environment(\.calendarLayout, viewModel.settings.calendarLayout)
@@ -79,6 +80,13 @@ struct NotchView: View {
             .environment(\.terminalFontSize, viewModel.settings.terminalFontSize)
             .contextMenu { appMenu }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var pageResizeAnimation: Animation {
+        if viewModel.selectedTabModule?.acceptsFileDrops == true || !viewModel.isExpanded {
+            return NotchMotion.shelf(reduceMotion: reduceMotion, speed: motionSpeed)
+        }
+        return NotchMotion.pageResize(reduceMotion: reduceMotion, speed: motionSpeed)
     }
 
     private var earModule: (any NotchModule)? {
@@ -135,9 +143,18 @@ struct NotchView: View {
             if viewModel.showsLevelsOverExpanded {
                 levelsOverlay
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if viewModel.showsClipboardOverExpanded, viewModel.settings.showsPopUp(for: .clipboard),
+                      viewModel.selectedTabModule !== viewModel.shelf, viewModel.selectedTabModule !== viewModel.clipboard,
+                      let entry = viewModel.clipboard.entry {
+                ClipboardPreview(entry: entry, compact: true)
+                    .frame(maxWidth: 270)
+                    .padding(.bottom, 8)
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
             }
         }
         .animation(.snappy, value: viewModel.showsLevelsOverExpanded)
+        .animation(.easeInOut(duration: 0.18), value: viewModel.showsClipboardOverExpanded)
         .transition(.opacity)
     }
 
@@ -229,9 +246,11 @@ struct NotchView: View {
                         Image(systemName: "gearshape.fill")
                             .font(.caption.weight(.medium))
                             .frame(width: 24, height: 22)
-                            .foregroundStyle(.white.opacity(0.55))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .glassControl(in: Capsule())
                             .contentShape(Capsule())
                     }
+                    .accessibilityLabel("Settings")
                     .help("Settings")
                 }
             }

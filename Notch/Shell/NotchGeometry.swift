@@ -89,10 +89,12 @@ struct NotchGeometry {
         }
     }
     
-    var activitySize: CGSize {
+    var activitySize: CGSize { activitySize(detailHeight: Self.activityDetailHeight) }
+
+    func activitySize(detailHeight: CGFloat) -> CGSize {
         CGSize(
             width: notchRect.width + 2 * Self.activityEarWidth,
-            height: notchRect.height + Self.activityDetailHeight
+            height: notchRect.height + detailHeight
         )
     }
 

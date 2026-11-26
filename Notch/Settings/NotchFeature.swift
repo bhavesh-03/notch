@@ -16,12 +16,13 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
     case calculator
     case terminal
     case mirror
+    case clipboard
 
     var id: String { rawValue }
 
     /// An opt-in feature starts turned off, for new installs and updates alike, until the user
-    /// turns it on in Settings. The terminal is one: a shell shouldn't appear on its own.
-    var isOptIn: Bool { self == .terminal }
+    /// turns it on in Settings.
+    var isOptIn: Bool { self == .terminal || self == .clipboard }
 
     enum TabSide {
         /// A labelled tab, left of the camera.
@@ -35,7 +36,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
     var tabSide: TabSide? {
         switch self {
         case .files, .notes, .terminal: .leading
-        case .mirror, .calculator: .trailing
+        case .mirror, .calculator, .clipboard: .trailing
         default: nil
         }
     }
@@ -54,6 +55,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .notes: "Notes"
         case .calculator: "Calculator"
         case .terminal: "Terminal"
+        case .clipboard: "Clipboard"
         }
     }
 
@@ -71,6 +73,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .notes: "note.text"
         case .calculator: NotchIcon.calculator   // our own glyph: SF Symbols has no calculator
         case .terminal: "terminal"
+        case .clipboard: "clipboard"
         }
     }
 
@@ -88,6 +91,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .notes: "Quick notes in their own tab, and a Home widget"
         case .calculator: "A calculator from a button beside the camera, and a Home widget"
         case .terminal: "Your shell in its own tab. Off until you turn it on"
+        case .clipboard: "Previews copied text, images and files. Off until you turn it on"
         }
     }
 }

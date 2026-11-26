@@ -58,6 +58,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         self.panel = panel
         
+        viewModel.clipboard.onChange = { [weak viewModel] in
+            guard let viewModel else { return }
+            if viewModel.clipboard.entry != nil {
+                viewModel.showClipboardPreview()
+            } else {
+                viewModel.hideClipboardPreview()
+            }
+        }
+
         let timer = viewModel.timer
         timer.onStart = { [notifications, settings] in
             guard settings.timerNotifies else { return }
@@ -163,6 +172,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             viewModel.nowPlaying.stop()    // ends the helper process
         }
+        if settings.isVisible(.clipboard) {
+            viewModel.clipboard.start()
+        } else {
+            viewModel.clipboard.stop()
+            viewModel.hideClipboardPreview()
+        }
         if !settings.isVisible(.terminal) {
             viewModel.terminal.stop()      // ends the shell; it starts again when the tab is opened
         }
@@ -264,9 +279,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         if activeRect.contains(mouse) {
             viewModel.pointerEntered(isDraggingFile: isDraggingFile)
-            if isDraggingFile {
-                viewModel.showDropTarget()
-            }
         } else {
             viewModel.pointerLeft()
         }

@@ -23,6 +23,7 @@ final class ShelfStore {
     static let capacity = 12
 
     private(set) var items: [Item] = []
+    @ObservationIgnored private var clearCount = 0
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let copiesFolder: URL
@@ -49,19 +50,32 @@ final class ShelfStore {
     }
 
     /// Adds whatever was dropped: a reference when there's a real, accessible file, otherwise a copy.
-    func add(_ providers: [NSItemProvider]) async {
-        for provider in providers where !isFull {
+    @discardableResult
+    func add(_ providers: [NSItemProvider]) async -> Int {
+        let clearCount = self.clearCount
+        var added = 0
+        for provider in providers {
+            guard !isFull, clearCount == self.clearCount else { break }
             if let url = await provider.loadFileURL() {
+                guard !isFull, clearCount == self.clearCount else { break }
                 switch reference(url) {
-                case .added: save(); continue
+                case .added:
+                    added += 1
+                    save()
+                    continue
                 case .duplicate: continue
                 case .unusable: break
                 }
             }
             if let copy = await provider.copyContents(into: copiesFolder) {
-                adoptCopy(copy)
+                guard !isFull, clearCount == self.clearCount else {
+                    try? FileManager.default.removeItem(at: copy.deletingLastPathComponent())
+                    break
+                }
+                if adoptCopy(copy) { added += 1 }
             }
         }
+        return added
     }
 
     private enum ReferenceResult { case added, duplicate, unusable }
@@ -83,12 +97,12 @@ final class ShelfStore {
         return .added
     }
 
-    /// Whether `url` is something the shelf already holds: the same file, or a copy of one.
-    /// Dragging an item out to Finder usually *copies* it, so the file dropped back in is a new
-    /// file with identical contents. That's still "the same thing" to the user.
-    private func isAlreadyShelved(_ url: URL, ignoring newCopy: URL? = nil) -> Bool {
+    /// A Finder copy can have the same name and contents with a different file identifier.
+    /// Different names may be intentional even when the bytes are identical.
+    private func isAlreadyShelved(_ url: URL) -> Bool {
         items.contains { item in
-            item.url != newCopy && (Self.isSameFile(item.url, url) || Self.hasSameContents(item.url, url))
+            Self.isSameFile(item.url, url)
+                || (item.name == url.lastPathComponent && Self.hasSameContents(item.url, url))
         }
     }
 
@@ -117,23 +131,15 @@ final class ShelfStore {
         return a == b
     }
 
-    /// What a shelf item offers when dragged out: the file itself, and explicitly its URL, so a drop
-    /// back onto the shelf is recognized as the same file instead of being copied as new data.
-    static func dragProvider(for item: Item) -> NSItemProvider {
-        let provider = NSItemProvider(contentsOf: item.url) ?? NSItemProvider()
-        provider.registerObject(item.url as NSURL, visibility: .all)
-        provider.suggestedName = item.url.deletingPathExtension().lastPathComponent
-        return provider
-    }
-
-    private func adoptCopy(_ url: URL) {
-        guard !isAlreadyShelved(url, ignoring: url),
+    private func adoptCopy(_ url: URL) -> Bool {
+        guard !isAlreadyShelved(url),
               let bookmark = try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) else {
-            try? FileManager.default.removeItem(at: url)
-            return
+            try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+            return false
         }
         items.append(Item(url: url, bookmark: bookmark, isAccessing: false, isOwnedCopy: true))
         save()
+        return true
     }
 
     // MARK: - Removing
@@ -145,6 +151,7 @@ final class ShelfStore {
     }
 
     func removeAll() {
+        clearCount += 1
         items.forEach { release($0) }
         items.removeAll()
         save()
@@ -154,17 +161,19 @@ final class ShelfStore {
         if item.isAccessing {
             item.url.stopAccessingSecurityScopedResource()
         }
-        if isStillOwned(item) {
+        guard item.isOwnedCopy else { return }
+        let parent = item.url.deletingLastPathComponent().standardizedFileURL.resolvingSymlinksInPath()
+        let root = copiesFolder.standardizedFileURL.resolvingSymlinksInPath()
+        if parent == root {
+            // Copies made by older builds lived directly in the shelf's folder.
             try? FileManager.default.removeItem(at: item.url)
+        } else if parent.deletingLastPathComponent() == root,
+                  UUID(uuidString: parent.lastPathComponent) != nil {
+            try? FileManager.default.removeItem(at: item.url)
+            if (try? FileManager.default.contentsOfDirectory(atPath: parent.path).isEmpty) == true {
+                try? FileManager.default.removeItem(at: parent)
+            }
         }
-    }
-
-    /// An owned copy is only deleted while it's still in the shelf's folder. If the user dragged it
-    /// out and Finder *moved* it (the bookmark follows the move), it's now their file — leave it.
-    private func isStillOwned(_ item: Item) -> Bool {
-        item.isOwnedCopy
-            && item.url.deletingLastPathComponent().standardizedFileURL.resolvingSymlinksInPath()
-                == copiesFolder.standardizedFileURL.resolvingSymlinksInPath()
     }
 
     // MARK: - Persistence
@@ -249,12 +258,15 @@ extension NSItemProvider {
             _ = loadFileRepresentation(for: type) { temporaryURL, _, _ in
                 // The temporary file only exists until this closure returns, so copy it now.
                 guard let temporaryURL else { return continuation.resume(returning: nil) }
+                // Isolate same-named files without changing the name a destination receives.
+                let directory = folder.appendingPathComponent(UUID().uuidString, isDirectory: true)
+                let destination = directory.appendingPathComponent(name)
                 do {
-                    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                    let destination = Self.uniqueURL(in: folder, named: name)
+                    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
                     try FileManager.default.copyItem(at: temporaryURL, to: destination)
                     continuation.resume(returning: destination)
                 } catch {
+                    try? FileManager.default.removeItem(at: directory)
                     continuation.resume(returning: nil)
                 }
             }
@@ -262,22 +274,10 @@ extension NSItemProvider {
     }
 
     nonisolated static func fileName(suggested: String?, type: UTType) -> String {
-        let base = suggested?.isEmpty == false ? suggested! : "Dropped item"
+        let component = suggested.map { ($0 as NSString).lastPathComponent } ?? ""
+        let base = component.isEmpty || component == "." || component == ".." || component == "/"
+            ? "Dropped item" : component
         guard (base as NSString).pathExtension.isEmpty, let ext = type.preferredFilenameExtension else { return base }
         return "\(base).\(ext)"
-    }
-
-    /// `name`, or `name 2`, `name 3`… if something with that name is already there.
-    nonisolated static func uniqueURL(in folder: URL, named name: String) -> URL {
-        let base = (name as NSString).deletingPathExtension
-        let ext = (name as NSString).pathExtension
-        var candidate = folder.appendingPathComponent(name)
-        var counter = 2
-        while FileManager.default.fileExists(atPath: candidate.path) {
-            let numbered = ext.isEmpty ? "\(base) \(counter)" : "\(base) \(counter).\(ext)"
-            candidate = folder.appendingPathComponent(numbered)
-            counter += 1
-        }
-        return candidate
     }
 }

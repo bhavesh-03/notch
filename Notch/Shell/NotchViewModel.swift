@@ -38,6 +38,7 @@ final class NotchViewModel {
     let timer: TimerController
     let calendar = CalendarMonitor()
     let shelf = ShelfStore()
+    let clipboard = ClipboardMonitor()
     let nowPlaying = NowPlayingMonitor()
     let mirror = MirrorCamera()
     let stats = SystemStatsMonitor()
@@ -122,11 +123,14 @@ final class NotchViewModel {
 
     /// A file is being dragged onto the notch: open whichever tab takes file drops.
     func showDropTarget() {
-        guard let target = tabModules.first(where: { $0.acceptsFileDrops }) else { return }
-        select(tab: target)
+        guard !isEditingHome, let target = tabModules.first(where: { $0.acceptsFileDrops }),
+              selectedTab != ObjectIdentifier(target) else { return }
+        withAnimation(NotchMotion.shelf(reduceMotion: reduceMotion(), speed: settings.animationSpeed.multiplier)) {
+            select(tab: target)
+        }
     }
     /// Every module, whether or not the user shows it.
-    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, stats, levels, bluetooth, notes, calculator, terminal, mirror] }
+    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, stats, levels, bluetooth, notes, calculator, terminal, mirror, clipboard] }
 
     /// Home's widgets in the user's order and sizes, minus those whose feature is hidden.
     var homeWidgets: [HomeWidget] {
@@ -192,10 +196,11 @@ final class NotchViewModel {
             }
         }
 
+        if isDraggingFile { showDropTarget() }
         let delay = settings.hoverDelay
         guard !isExpanded, !isDraggingFile, delay > 0 else {
             cancelPendingExpand()
-            expand()
+            expand(isDraggingFile: isDraggingFile)
             return
         }
         guard expandTask == nil else { return }   // already counting down
@@ -219,7 +224,7 @@ final class NotchViewModel {
         expandTask = nil
     }
 
-    func expand() {
+    func expand(isDraggingFile: Bool = false) {
         collapseTask?.cancel()
         collapseTask = nil
         activityTask?.cancel()
@@ -227,7 +232,10 @@ final class NotchViewModel {
         isHovered = false
 
         guard !isExpanded else { return }
-        withAnimation(NotchMotion.expandCollapse(speed: settings.animationSpeed.multiplier)) {
+        let animation = isDraggingFile
+            ? NotchMotion.shelf(reduceMotion: reduceMotion(), speed: settings.animationSpeed.multiplier)
+            : NotchMotion.expandCollapse(speed: settings.animationSpeed.multiplier)
+        withAnimation(animation) {
             presentation = .expanded
         }
     }
@@ -272,7 +280,11 @@ final class NotchViewModel {
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
 
-            withAnimation(NotchMotion.expandCollapse(speed: settings.animationSpeed.multiplier)) {
+            hideClipboardPreview()
+            let animation = selectedTabModule?.acceptsFileDrops == true
+                ? NotchMotion.shelf(reduceMotion: reduceMotion(), speed: settings.animationSpeed.multiplier)
+                : NotchMotion.expandCollapse(speed: settings.animationSpeed.multiplier)
+            withAnimation(animation) {
                 presentation = .collapsed
                 selectedTab = nil
                 heldHoverHeight = 0
@@ -299,6 +311,36 @@ final class NotchViewModel {
             try? await Task.sleep(for: .seconds(1.5))
             guard !Task.isCancelled else { return }
             showsLevelsOverExpanded = false
+        }
+    }
+
+    private(set) var showsClipboardOverExpanded = false
+    @ObservationIgnored private var clipboardTask: Task<Void, Never>?
+
+    func showClipboardPreview() {
+        guard settings.isVisible(.clipboard), settings.showsPopUp(for: .clipboard) else { return }
+        guard isExpanded else {
+            showActivity(from: clipboard)
+            return
+        }
+        guard !isEditingHome, selectedTabModule !== clipboard, selectedTabModule !== shelf else { return }
+
+        showsClipboardOverExpanded = true
+        clipboardTask?.cancel()
+        clipboardTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2.5))
+            if !Task.isCancelled { self?.hideClipboardPreview() }
+        }
+    }
+
+    func hideClipboardPreview() {
+        clipboardTask?.cancel()
+        clipboardTask = nil
+        showsClipboardOverExpanded = false
+        if case .activity(let module) = presentation, module === clipboard {
+            activityTask?.cancel()
+            activityTask = nil
+            withAnimation(activityCloseAnimation) { presentation = .collapsed }
         }
     }
 
