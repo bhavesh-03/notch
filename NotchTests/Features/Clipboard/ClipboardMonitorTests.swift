@@ -11,7 +11,7 @@ struct ClipboardMonitorTests {
         #expect(pasteboard.setString("Copied text", forType: .string))
         let count = pasteboard.changeCount
 
-        guard case .text(let text) = ClipboardMonitor.preview(from: pasteboard) else {
+        guard case .text(let text, _) = ClipboardMonitor.read(from: pasteboard) else {
             Issue.record("Expected a text preview")
             return
         }
@@ -26,7 +26,7 @@ struct ClipboardMonitorTests {
         pasteboard.declareTypes([concealed, .string], owner: nil)
         pasteboard.setData(Data(), forType: concealed)
         pasteboard.setString("Secret", forType: .string)
-        #expect(ClipboardMonitor.preview(from: pasteboard) == nil)
+        #expect(ClipboardMonitor.read(from: pasteboard) == nil)
     }
 
     @Test func readsACopiedImageAndGivesItPrecedenceOverText() throws {
@@ -39,11 +39,19 @@ struct ClipboardMonitorTests {
         pasteboard.setData(png, forType: pngType)
         pasteboard.setString("Image fallback", forType: .string)
 
-        guard case .image(let image) = ClipboardMonitor.preview(from: pasteboard) else {
+        guard let payload = ClipboardMonitor.read(from: pasteboard), case .image = payload else {
             Issue.record("Expected an image preview")
             return
         }
-        #expect(image.size == NSSize(width: 1, height: 1))
+        let monitor = ClipboardMonitor()
+        monitor.recordChange(from: pasteboard)
+        let entry = try #require(monitor.history.first)
+        #expect(entry.thumbnail?.size == NSSize(width: 1, height: 1))
+        pasteboard.clearContents()
+        #expect(monitor.copy(entry, to: pasteboard))
+        #expect(pasteboard.data(forType: pngType) == png)
+        monitor.recordChange(from: pasteboard)
+        #expect(monitor.history.count == 1)
     }
 
     @Test func readsAllCopiedFileURLs() throws {
@@ -57,10 +65,47 @@ struct ClipboardMonitorTests {
         pasteboard.clearContents()
         #expect(pasteboard.writeObjects(urls.map { $0 as NSURL }))
 
-        guard case .files(let files) = ClipboardMonitor.preview(from: pasteboard) else {
+        guard case .files(let files) = ClipboardMonitor.read(from: pasteboard) else {
             Issue.record("Expected a file preview")
             return
         }
         #expect(files == urls)
+    }
+
+    @Test func remembersTenItemsAcrossLaunchesAndClearsThem() throws {
+        let pasteboard = NSPasteboard.withUniqueName()
+        defer { pasteboard.releaseGlobally() }
+        let folder = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let url = folder.appendingPathComponent("History.plist")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let monitor = ClipboardMonitor(historyURL: url)
+        for i in 1...12 {
+            pasteboard.clearContents()
+            pasteboard.setString("Item \(i)", forType: .string)
+            monitor.recordChange(from: pasteboard)
+        }
+        #expect(monitor.history.count == 10)
+        let last = try #require(monitor.history.last)
+        #expect(last.content == .text("Item 3", type: NSPasteboard.PasteboardType.string.rawValue))
+
+        let relaunched = ClipboardMonitor(historyURL: url)
+        relaunched.start(pasteboard: pasteboard)
+        #expect(relaunched.history.map(\.content) == monitor.history.map(\.content))
+        defer { relaunched.stop() }
+
+        let original = String(repeating: "Original text ", count: 500)
+        pasteboard.clearContents()
+        pasteboard.setString(original, forType: .string)
+        relaunched.recordChange(from: pasteboard)
+        let first = try #require(relaunched.history.first)
+        #expect(relaunched.copy(first, to: pasteboard))
+        #expect(pasteboard.string(forType: .string) == original)
+
+        relaunched.clear(pasteboard: pasteboard)
+        #expect(relaunched.history.isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+        relaunched.recordChange(from: pasteboard)
+        #expect(relaunched.history.isEmpty)
+        #expect(pasteboard.string(forType: .string) == original)
     }
 }

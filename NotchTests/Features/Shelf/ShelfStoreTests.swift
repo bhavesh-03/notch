@@ -251,6 +251,27 @@ struct ShelfStoreTests {
         #expect(shelf.items.map(\.name) == ["a.txt", "b.txt"])
     }
 
+    @Test func deliveredFileNameWinsOverAGenericFallback() {
+        #expect(NSItemProvider.fileName(suggested: nil, delivered: "Quarterly report.pdf", type: .pdf) == "Quarterly report.pdf")
+        #expect(NSItemProvider.fileName(suggested: "Meeting notes", delivered: "File.pdf", type: .pdf) == "Meeting notes.pdf")
+        #expect(NSItemProvider.fileName(suggested: nil, delivered: UUID().uuidString + ".pdf", type: .pdf) == "PDF Document.pdf")
+        let source = URL(string: "https://example.com/Quarterly%20report.pdf?download=1")
+        #expect(NSItemProvider.sourceFileName(from: source, type: .pdf) == "Quarterly report.pdf")
+        #expect(NSItemProvider.sourceFileName(from: source, type: .jpeg) == nil)
+    }
+
+    @Test func renamedCopiesKeepTheNewNameWhenReopened() async throws {
+        let shelf = store()
+        await shelf.add([pngProvider(Data([1, 2, 3]))])
+        let original = try #require(shelf.items.first)
+        #expect(!shelf.renameOwnedCopy(original, to: "../outside.png"))
+        #expect(shelf.renameOwnedCopy(original, to: "Original image.png"))
+        let renamed = try #require(store().items.first)
+        #expect(renamed.name == "Original image.png")
+        #expect(try Data(contentsOf: renamed.url) == Data([1, 2, 3]))
+        #expect(!FileManager.default.fileExists(atPath: original.url.path))
+    }
+
     @Test func differentFilesOfTheSameSizeAreBothKept() {
         let shelf = store()
         #expect(shelf.add([try! file("ab.txt")]))

@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import UniformTypeIdentifiers
 
 /// Files the user dropped on the notch, kept across launches.
@@ -69,13 +69,59 @@ final class ShelfStore {
             }
             if let copy = await provider.copyContents(into: copiesFolder) {
                 guard !isFull, clearCount == self.clearCount else {
-                    try? FileManager.default.removeItem(at: copy.deletingLastPathComponent())
+                    Self.deleteCopy(copy)
                     break
                 }
                 if adoptCopy(copy) { added += 1 }
             }
         }
         return added
+    }
+
+    /// Finder and file-promise sources carry their names on the native drag pasteboard.
+    func receivePromises(_ receivers: [NSFilePromiseReceiver], onAdd: @escaping () -> Void) {
+        let clearCount = self.clearCount
+        let queue = OperationQueue()
+        queue.qualityOfService = .userInitiated
+        for receiver in receivers.prefix(Self.capacity - items.count) {
+            let folder = copiesFolder.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            guard (try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)) != nil else {
+                continue
+            }
+            receiver.receivePromisedFiles(atDestination: folder, options: [:], operationQueue: queue) { [weak self] url, error in
+                guard error == nil else { return }
+                Task { @MainActor in
+                    guard let self, !self.isFull, clearCount == self.clearCount else {
+                        try? FileManager.default.removeItem(at: url)
+                        return
+                    }
+                    if self.adoptCopy(url, cleanupParent: false) { onAdd() }
+                }
+            }
+        }
+    }
+
+    /// Repairs the name of a materialized drop when its source didn't supply one.
+    func renameOwnedCopy(_ item: Item, to name: String) -> Bool {
+        guard let index = items.firstIndex(of: item), item.isOwnedCopy,
+              Self.owns(item.url, in: copiesFolder),
+              let name = NSItemProvider.validFileName(name) else { return false }
+        guard name != item.name else { return true }
+        let newURL = item.url.deletingLastPathComponent().appendingPathComponent(name)
+        do {
+            try FileManager.default.moveItem(at: item.url, to: newURL)
+            do {
+                let bookmark = try newURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+                items[index] = Item(url: newURL, bookmark: bookmark, isAccessing: false, isOwnedCopy: true)
+                save()
+                return true
+            } catch {
+                try? FileManager.default.moveItem(at: newURL, to: item.url)
+                return false
+            }
+        } catch {
+            return false
+        }
     }
 
     private enum ReferenceResult { case added, duplicate, unusable }
@@ -131,10 +177,14 @@ final class ShelfStore {
         return a == b
     }
 
-    private func adoptCopy(_ url: URL) -> Bool {
+    private func adoptCopy(_ url: URL, cleanupParent: Bool = true) -> Bool {
         guard !isAlreadyShelved(url),
               let bookmark = try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) else {
-            try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+            if cleanupParent {
+                Self.deleteCopy(url)
+            } else {
+                try? FileManager.default.removeItem(at: url)
+            }
             return false
         }
         items.append(Item(url: url, bookmark: bookmark, isAccessing: false, isOwnedCopy: true))
@@ -161,18 +211,23 @@ final class ShelfStore {
         if item.isAccessing {
             item.url.stopAccessingSecurityScopedResource()
         }
-        guard item.isOwnedCopy else { return }
-        let parent = item.url.deletingLastPathComponent().standardizedFileURL.resolvingSymlinksInPath()
+        guard item.isOwnedCopy, Self.owns(item.url, in: copiesFolder) else { return }
+        Self.deleteCopy(item.url)
+    }
+
+    private static func owns(_ url: URL, in copiesFolder: URL) -> Bool {
+        let parent = url.deletingLastPathComponent().standardizedFileURL.resolvingSymlinksInPath()
         let root = copiesFolder.standardizedFileURL.resolvingSymlinksInPath()
-        if parent == root {
-            // Copies made by older builds lived directly in the shelf's folder.
-            try? FileManager.default.removeItem(at: item.url)
-        } else if parent.deletingLastPathComponent() == root,
-                  UUID(uuidString: parent.lastPathComponent) != nil {
-            try? FileManager.default.removeItem(at: item.url)
-            if (try? FileManager.default.contentsOfDirectory(atPath: parent.path).isEmpty) == true {
-                try? FileManager.default.removeItem(at: parent)
-            }
+        return parent == root
+            || (parent.deletingLastPathComponent() == root && UUID(uuidString: parent.lastPathComponent) != nil)
+    }
+
+    private static func deleteCopy(_ url: URL) {
+        try? FileManager.default.removeItem(at: url)
+        let parent = url.deletingLastPathComponent()
+        if UUID(uuidString: parent.lastPathComponent) != nil,
+           (try? FileManager.default.contentsOfDirectory(atPath: parent.path).isEmpty) == true {
+            try? FileManager.default.removeItem(at: parent)
         }
     }
 
@@ -240,8 +295,16 @@ extension NSItemProvider {
     /// The dropped file URL, if the drag carries one.
     func loadFileURL() async -> URL? {
         guard hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) else { return nil }
-        return await withCheckedContinuation { continuation in
-            _ = loadObject(ofClass: URL.self) { url, _ in
+        let url = await loadURL(for: .fileURL)
+        return url?.isFileURL == true ? url : nil
+    }
+
+    private func loadURL(for type: UTType) async -> URL? {
+        await withCheckedContinuation { continuation in
+            loadItem(forTypeIdentifier: type.identifier, options: nil) { value, _ in
+                let url = (value as? URL)
+                    ?? (value as? Data).flatMap { URL(dataRepresentation: $0, relativeTo: nil) }
+                    ?? (value as? String).flatMap(URL.init(string:))
                 continuation.resume(returning: url)
             }
         }
@@ -252,7 +315,11 @@ extension NSItemProvider {
         guard let type = registeredContentTypes.first(where: { $0.conforms(to: .data) && !$0.conforms(to: .url) }) else {
             return nil
         }
-        let name = Self.fileName(suggested: suggestedName, type: type)
+        var proposedName = suggestedName
+        if proposedName == nil, hasItemConformingToTypeIdentifier(UTType.url.identifier) {
+            proposedName = Self.sourceFileName(from: await loadURL(for: .url), type: type)
+        }
+        let suggested = proposedName
 
         return await withCheckedContinuation { continuation in
             _ = loadFileRepresentation(for: type) { temporaryURL, _, _ in
@@ -260,6 +327,7 @@ extension NSItemProvider {
                 guard let temporaryURL else { return continuation.resume(returning: nil) }
                 // Isolate same-named files without changing the name a destination receives.
                 let directory = folder.appendingPathComponent(UUID().uuidString, isDirectory: true)
+                let name = Self.fileName(suggested: suggested, delivered: temporaryURL.lastPathComponent, type: type)
                 let destination = directory.appendingPathComponent(name)
                 do {
                     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -273,10 +341,28 @@ extension NSItemProvider {
         }
     }
 
-    nonisolated static func fileName(suggested: String?, type: UTType) -> String {
-        let component = suggested.map { ($0 as NSString).lastPathComponent } ?? ""
-        let base = component.isEmpty || component == "." || component == ".." || component == "/"
-            ? "Dropped item" : component
+    /// Browsers sometimes provide a source link and the file bytes as separate representations.
+    /// Use the link’s basename only when it agrees with the data type being exported.
+    nonisolated static func sourceFileName(from url: URL?, type: UTType) -> String? {
+        guard let url, let sourceType = UTType(filenameExtension: url.pathExtension),
+              sourceType.conforms(to: type), let name = validFileName(url.lastPathComponent) else { return nil }
+        return name
+    }
+
+    nonisolated static func validFileName(_ name: String) -> String? {
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, name != ".", name != "..",
+              !name.contains("/"), !name.contains("\0") else { return nil }
+        return name
+    }
+
+    nonisolated static func fileName(suggested: String?, delivered: String, type: UTType) -> String {
+        let suggested = suggested.flatMap { validFileName(($0 as NSString).lastPathComponent) }
+        let deliveredStem = (delivered as NSString).deletingPathExtension
+        let placeholder = deliveredStem.isEmpty || UUID(uuidString: deliveredStem) != nil
+            || ["file", "item", "dropped item", "untitled"].contains(deliveredStem.lowercased())
+            || deliveredStem.hasPrefix(".")
+        let base = suggested ?? (!placeholder ? validFileName(delivered) : nil)
+            ?? (type.conforms(to: .image) ? "Image" : type.conforms(to: .pdf) ? "PDF Document" : "File")
         guard (base as NSString).pathExtension.isEmpty, let ext = type.preferredFilenameExtension else { return base }
         return "\(base).\(ext)"
     }

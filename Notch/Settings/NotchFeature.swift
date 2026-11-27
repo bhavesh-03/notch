@@ -91,7 +91,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .notes: "Quick notes in their own tab, and a Home widget"
         case .calculator: "A calculator from a button beside the camera, and a Home widget"
         case .terminal: "Your shell in its own tab. Off until you turn it on"
-        case .clipboard: "Previews copied text, images and files. Off until you turn it on"
+        case .clipboard: "Keeps your last 10 copies on this Mac. Off until you turn it on"
         }
     }
 }

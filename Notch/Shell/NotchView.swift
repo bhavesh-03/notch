@@ -146,7 +146,7 @@ struct NotchView: View {
             } else if viewModel.showsClipboardOverExpanded, viewModel.settings.showsPopUp(for: .clipboard),
                       viewModel.selectedTabModule !== viewModel.shelf, viewModel.selectedTabModule !== viewModel.clipboard,
                       let entry = viewModel.clipboard.entry {
-                ClipboardPreview(entry: entry, compact: true)
+                ClipboardPreview(entry: entry)
                     .frame(maxWidth: 270)
                     .padding(.bottom, 8)
                     .allowsHitTesting(false)
@@ -412,6 +412,12 @@ struct NotchView: View {
             withAnimation(.snappy) { viewModel.beginEditingHome() }
         }
         .disabled(viewModel.isEditingHome)
+        let clipboardEnabled = viewModel.settings.isVisible(.clipboard)
+        Button(clipboardEnabled ? "Clipboard History" : "Enable Clipboard History") {
+            if !clipboardEnabled { viewModel.settings.setVisible(.clipboard, true) }
+            viewModel.select(tab: viewModel.clipboard)
+            viewModel.expand()
+        }
         Button("Settings…") {
             viewModel.onOpenSettings?()
         }

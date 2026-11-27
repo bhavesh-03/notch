@@ -34,8 +34,8 @@ Notch lives in the space around your camera. At rest it's just the notch, with a
 **Tools**
 - **Timer** with an iOS-style ruler, presets and a notification when it ends.
 - **Calendar** with the day's events and **Join** for Meet, Zoom, Teams, FaceTime and Webex calls, laid out as a day strip or a month grid beside or above the events.
-- **Files**: keep up to 12 files or folders on the shelf. Click tiles to select a batch, then drag a selected tile or use **Copy** and paste into Finder. **Copy All** copies the whole shelf.
-- **Clipboard**: an optional preview of newly copied text, files, and images. Enable it under **Settings → Features**. Control the pop-up under **Settings → Behavior**.
+- **Files**: keep up to 12 files or folders on the shelf. Click rows to select a batch, then drag a selected tile or use **Copy** and paste into Finder. **Copy All** copies the whole shelf. Use the row’s menu to rename an imported copy if the source didn’t provide a filename.
+- **Clipboard**: keep your 10 most recent text, image, PDF and file copies on this Mac. Right-click the notch and choose **Enable Clipboard History**, or enable Clipboard under **Settings → Features**. Open the Clipboard tab to copy an entry again or clear the history. Control the pop-up under **Settings → Behavior**.
 - **Notes**: quick notes you type right in the notch.
 - **Calculator** with a keypad, live results and history.
 - **Mirror**: a quick look at your camera.

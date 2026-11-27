@@ -11,6 +11,7 @@ extension ShelfStore: NotchModule {
     var tab: NotchTab? { NotchTab(title: "Files", symbol: "tray.full.fill") }
 
     var acceptsFileDrops: Bool { true }
+    var wantsTallPage: Bool { true }
 
     @ViewBuilder
     func content(for placement: NotchPlacement) -> some View {
@@ -29,6 +30,8 @@ private struct ShelfSection: View {
     @State private var isTargeted = false
     @State private var selection: Set<ShelfStore.Item.ID> = []
     @State private var feedback: Feedback?
+    @State private var renameItem: ShelfStore.Item?
+    @State private var proposedName = ""
 
     private struct Feedback: Identifiable {
         let id = UUID()
@@ -47,11 +50,10 @@ private struct ShelfSection: View {
             if shelf.items.isEmpty {
                 emptyShelf
             } else {
-                fileGrid
+                fileList
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(8)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(isTargeted && !rejectsDrop ? .white.opacity(0.10) : .clear, in: .rect(cornerRadius: 12))
         .overlay {
@@ -81,8 +83,30 @@ private struct ShelfSection: View {
             try? await Task.sleep(for: .seconds(1.6))
             if !Task.isCancelled { feedback = nil }
         }
-        .onDrop(of: [.fileURL, .data], isTargeted: $isTargeted) { providers in
+        .alert("Rename File", isPresented: Binding(get: { renameItem != nil }, set: { if !$0 { renameItem = nil } }),
+               presenting: renameItem) { item in
+            TextField("Filename", text: $proposedName)
+            Button("Cancel", role: .cancel) {}
+            Button("Rename") {
+                if !shelf.renameOwnedCopy(item, to: proposedName) {
+                    feedback = Feedback(text: "Couldn’t rename file", symbol: "exclamationmark.circle")
+                }
+            }
+        }
+        .onDrop(of: [UTType.fileURL.identifier, UTType.data.identifier] + NSFilePromiseReceiver.readableDraggedTypes,
+                isTargeted: $isTargeted) { providers in
             guard !shelf.isFull else { return false }
+            let pasteboard = NSPasteboard(name: .drag)
+            let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+            let promises = pasteboard.readObjects(forClasses: [NSFilePromiseReceiver.self]) as? [NSFilePromiseReceiver] ?? []
+            let previousCount = shelf.items.count
+            shelf.add(urls)
+            let added = shelf.items.count - previousCount
+            if added > 0 { showAdded(added) }
+            if !promises.isEmpty {
+                shelf.receivePromises(promises) { showAdded(shelf.items.count - previousCount) }
+            }
+            if !urls.isEmpty || !promises.isEmpty { return true }
             Task {
                 let added = await shelf.add(providers)
                 if added == 0 {
@@ -90,7 +114,7 @@ private struct ShelfSection: View {
                 } else if shelf.isFull && added < providers.count {
                     feedback = Feedback(text: "Shelf full · \(added) added", symbol: "tray.full.fill")
                 } else {
-                    feedback = Feedback(text: added == 1 ? "1 item added" : "\(added) items added", symbol: "checkmark.circle.fill")
+                    showAdded(added)
                 }
             }
             return true
@@ -109,7 +133,9 @@ private struct ShelfSection: View {
                 Label(feedback.text, systemImage: feedback.symbol)
                     .id(feedback.id)
                     .transition(.opacity)
-            } else if !shelf.items.isEmpty {
+            } else {
+                Text("Files").font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
                 Text(selectedItems.isEmpty
                      ? "\(shelf.items.count) / \(ShelfStore.capacity)"
                      : "\(selectedItems.count) selected")
@@ -125,7 +151,7 @@ private struct ShelfSection: View {
         }
         .font(.system(size: 10, weight: .medium))
         .foregroundStyle(.white.opacity(0.74))
-        .frame(height: 19)
+        .frame(height: 25)
     }
 
     private var emptyShelf: some View {
@@ -142,22 +168,32 @@ private struct ShelfSection: View {
         .padding(.bottom, 12)
     }
 
-    private var fileGrid: some View {
-        // Six flexible columns fit even at the narrowest notch width.
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 6), spacing: 2) {
-            ForEach(shelf.items) { item in
-                FileTile(
-                    item: item,
-                    isSelected: selection.contains(item.id),
-                    toggleSelection: { toggleSelection(item.id) },
-                    dragItems: { selection.contains(item.id) ? selectedItems : [item] },
-                    copy: { copy([item]) },
-                    remove: { shelf.remove(item) }
-                )
-                .transition(reduceMotion ? .opacity : .offset(y: -8).combined(with: .opacity))
+    private var fileList: some View {
+        ScrollView {
+            LazyVStack(spacing: 4) {
+                ForEach(shelf.items) { item in
+                    FileRow(
+                        item: item,
+                        isSelected: selection.contains(item.id),
+                        toggleSelection: { toggleSelection(item.id) },
+                        dragItems: { selection.contains(item.id) ? selectedItems : [item] },
+                        copy: { copy([item]) },
+                        rename: {
+                            proposedName = item.name
+                            renameItem = item
+                        },
+                        remove: { shelf.remove(item) }
+                    )
+                    .transition(reduceMotion ? .opacity : .offset(y: -6).combined(with: .opacity))
+                }
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func showAdded(_ count: Int) {
+        guard count > 0 else { return }
+        feedback = Feedback(text: count == 1 ? "1 item added" : "\(count) items added", symbol: "checkmark.circle.fill")
     }
 
     private func shelfButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
@@ -184,59 +220,66 @@ private struct ShelfSection: View {
     }
 }
 
-private struct FileTile: View {
+private struct FileRow: View {
     let item: ShelfStore.Item
     let isSelected: Bool
     let toggleSelection: () -> Void
     let dragItems: () -> [ShelfStore.Item]
     let copy: () -> Void
+    let rename: () -> Void
     let remove: () -> Void
-    @State private var isHovered = false
 
     var body: some View {
-        VStack(spacing: 1) {
-            FileThumbnail(url: item.url)
-                .frame(width: 21, height: 21)
-            Text(item.name)
-                .font(.system(size: 9))
-                .foregroundStyle(.white.opacity(0.8))
-                .lineLimit(1)
-                .truncationMode(.middle)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 32)
-        .background(isSelected ? .white.opacity(0.16) : .clear, in: .rect(cornerRadius: 7))
-        .overlay { ShelfDragSource(items: dragItems, onClick: toggleSelection) }
-        .contentShape(.rect(cornerRadius: 7))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(item.name)
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityAction { toggleSelection() }
-        .accessibilityAction(named: Text("Remove from Shelf"), remove)
-        .overlay(alignment: .topTrailing) {
-            if isHovered {
-                Button(action: remove) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 7, weight: .bold))
-                        .frame(width: 14, height: 14)
-                        .glassControl(in: Circle())
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Remove \(item.name)")
+        HStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(.white.opacity(isSelected ? 0.95 : 0.35))
+                FileThumbnail(url: item.url)
+                    .frame(width: 27, height: 27)
+                Text(item.name)
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer(minLength: 0)
             }
+            .padding(.leading, 8)
+            .frame(height: 36)
+            .overlay { ShelfDragSource(items: dragItems, onClick: toggleSelection) }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(item.name)
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAction { toggleSelection() }
+            .help(item.name)
+            Button(action: copy) {
+                Label("Copy", systemImage: "doc.on.doc")
+                    .padding(.horizontal, 8)
+                    .frame(height: 24)
+                    .glassControl(in: Capsule())
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Copy \(item.name)")
+            .help("Copy File")
+            Menu {
+                Button("Copy File", action: copy)
+                if item.isOwnedCopy { Button("Rename…", action: rename) }
+                Button("Open") { NSWorkspace.shared.open(item.url) }
+                Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([item.url]) }
+                Divider()
+                Button("Remove from Shelf", role: .destructive, action: remove)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .accessibilityLabel("Actions for \(item.name)")
+            .padding(.trailing, 4)
         }
-        .onHover { isHovered = $0 }
-        .help(item.name)
-        .contextMenu {
-            Button(isSelected ? "Deselect" : "Select", action: toggleSelection)
-            Button("Copy", action: copy)
-            Divider()
-            Button("Open") { NSWorkspace.shared.open(item.url) }
-            Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([item.url]) }
-            Divider()
-            Button("Remove from Shelf", action: remove)
-        }
+        .font(.system(size: 11, weight: .medium))
+        .background(.white.opacity(isSelected ? 0.16 : 0.07), in: .rect(cornerRadius: 8))
     }
 }
 

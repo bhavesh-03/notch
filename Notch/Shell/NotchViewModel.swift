@@ -38,7 +38,7 @@ final class NotchViewModel {
     let timer: TimerController
     let calendar = CalendarMonitor()
     let shelf = ShelfStore()
-    let clipboard = ClipboardMonitor()
+    let clipboard: ClipboardMonitor
     let nowPlaying = NowPlayingMonitor()
     let mirror = MirrorCamera()
     let stats = SystemStatsMonitor()
@@ -150,11 +150,13 @@ final class NotchViewModel {
         geometry: NotchGeometry,
         settings: NotchSettings = .ephemeral(),
         notes: NotesStore = .ephemeral(),
+        clipboard: ClipboardMonitor = ClipboardMonitor(),
         reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
     ) {
         self.geometry = geometry
         self.settings = settings
         self.notes = notes
+        self.clipboard = clipboard
         self.reduceMotion = reduceMotion
         timer = TimerController(duration: settings.timerLength)
         syncTimerLength()

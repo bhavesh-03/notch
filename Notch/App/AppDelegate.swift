@@ -40,7 +40,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         guard let geometry = currentGeometry() else { return }
         
-        let viewModel = NotchViewModel(geometry: geometry, settings: settings, notes: NotesStore())
+        let viewModel = NotchViewModel(
+            geometry: geometry, settings: settings, notes: NotesStore(),
+            clipboard: ClipboardMonitor(historyURL: ClipboardMonitor.defaultHistoryURL)
+        )
         self.viewModel = viewModel
         let panel = NotchPanel(contentRect: geometry.panelRect)
         panel.contentView = NSHostingView(rootView: NotchView(viewModel: viewModel))
@@ -231,7 +234,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func handleScrollWheel(_ event: NSEvent) {
         guard let viewModel, viewModel.isExpanded, viewModel.settings.swipeNavigationEnabled, !viewModel.isEditingHome, !viewModel.isEditingText else { return }
         // Modal pages like Timer and Calendar handle their own scrolling and shouldn't swipe tabs
-        guard viewModel.selectedTabModule?.tab?.style != .page else { return }
+        guard viewModel.selectedTabModule?.tab?.style != .page,
+              viewModel.selectedTabModule?.feature != .files,
+              viewModel.selectedTabModule?.feature != .clipboard else { return }
 
         let mouse = NSEvent.mouseLocation
         let swipeStartRect = viewModel.geometry.panelRect

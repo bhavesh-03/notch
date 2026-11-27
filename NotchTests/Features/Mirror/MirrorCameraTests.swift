@@ -38,7 +38,18 @@ struct TabStyleTests {
         #expect(!model.isTall)
         model.select(tab: model.mirror)
         #expect(model.isTall)
-        model.select(tab: model.shelf)
+        model.select(tab: nil)
         #expect(!model.isTall)
+    }
+
+    @Test func scrollableShelfAndClipboardPagesAreTall() {
+        let settings = NotchSettings.ephemeral()
+        settings.setVisible(.clipboard, true)
+        let model = NotchViewModel(geometry: .previewHardware, settings: settings)
+        model.expand()
+        model.select(tab: model.shelf)
+        #expect(model.isTall)
+        model.select(tab: model.clipboard)
+        #expect(model.isTall)
     }
 }
