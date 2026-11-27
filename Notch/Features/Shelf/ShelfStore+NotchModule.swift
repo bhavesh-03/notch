@@ -284,8 +284,9 @@ private struct FileRow: View {
 }
 
 /// A Quick Look thumbnail (image, PDF, video frame…), falling back to the file's Finder icon.
-private struct FileThumbnail: View {
+struct FileThumbnail: View {
     let url: URL
+    var previewSize: CGFloat = 56
     @State private var thumbnail: NSImage?
 
     var body: some View {
@@ -293,14 +294,14 @@ private struct FileThumbnail: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .task(id: url) {
-                thumbnail = await Self.makeThumbnail(for: url)
+                thumbnail = await makeThumbnail()
             }
     }
 
-    private static func makeThumbnail(for url: URL) async -> NSImage? {
+    private func makeThumbnail() async -> NSImage? {
         let request = QLThumbnailGenerator.Request(
             fileAt: url,
-            size: CGSize(width: 56, height: 56),
+            size: CGSize(width: previewSize, height: previewSize),
             scale: NSScreen.main?.backingScaleFactor ?? 2,
             representationTypes: .thumbnail
         )

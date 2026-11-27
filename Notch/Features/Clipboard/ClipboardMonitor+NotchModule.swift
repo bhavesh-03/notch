@@ -28,64 +28,248 @@ extension ClipboardMonitor: NotchModule {
 
 private struct ClipboardHistoryPage: View {
     let clipboard: ClipboardMonitor
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var copiedID: UUID?
+    @State private var scrollID: UUID?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text("Clipboard")
-                    .font(.system(size: 13, weight: .semibold))
-                Text("\(clipboard.history.count) / \(ClipboardMonitor.capacity)")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.55))
-                Spacer()
-                Button {
-                    clipboard.clear()
-                    copiedID = nil
-                } label: {
-                    Label("Clear History", systemImage: "trash")
-                        .font(.caption.weight(.medium))
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .glassControl(in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(clipboard.history.isEmpty)
-            }
+        VStack(alignment: .leading, spacing: 7) {
+            header
             if clipboard.history.isEmpty {
                 ContentUnavailableView("Clipboard is empty", systemImage: "clipboard",
                                        description: Text("Copy text, an image, or a file to get started."))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 4) {
+                ScrollView(.horizontal) {
+                    LazyHStack(spacing: 9) {
                         ForEach(clipboard.history) { entry in
-                            HStack(spacing: 8) {
-                                ClipboardEntryLabel(entry: entry, concise: false)
-                                Button {
-                                    if clipboard.copy(entry) { copiedID = entry.id }
-                                } label: {
-                                    Label(copiedID == entry.id ? "Copied" : "Copy",
-                                          systemImage: copiedID == entry.id ? "checkmark" : "doc.on.doc")
-                                        .font(.caption.weight(.medium))
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 5)
-                                        .glassControl(in: Capsule())
-                                }
-                                .buttonStyle(.plain)
+                            Button {
+                                if clipboard.copy(entry) { copiedID = entry.id }
+                            } label: {
+                                ClipboardHistoryCard(entry: entry, isCopied: copiedID == entry.id)
                             }
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 4)
-                            .background(.white.opacity(0.07), in: .rect(cornerRadius: 9))
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Copies this item again")
+                            .id(entry.id)
                         }
                     }
+                    .scrollTargetLayout()
+                    .padding(.bottom, 3)
                 }
+                .scrollPosition(id: $scrollID)
+                .scrollTargetBehavior(.viewAligned)
+                .frame(height: 145)
+                .frame(maxHeight: .infinity, alignment: .top)
             }
         }
         .task(id: copiedID) {
             guard copiedID != nil else { return }
             try? await Task.sleep(for: .seconds(1.3))
             if !Task.isCancelled { copiedID = nil }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 7) {
+            Text("Clipboard")
+                .font(.system(size: 13, weight: .semibold))
+            Text("\(clipboard.history.count) / \(ClipboardMonitor.capacity)")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.white.opacity(0.55))
+            Spacer(minLength: 5)
+            if clipboard.history.count > 1 {
+                arrow("Previous card", symbol: "chevron.left", step: -1)
+                arrow("Next card", symbol: "chevron.right", step: 1)
+            }
+            Button {
+                clipboard.clear()
+                copiedID = nil
+                scrollID = nil
+            } label: {
+                Label("Clear History", systemImage: "trash")
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, 8)
+                    .frame(height: 22)
+                    .glassControl(in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(clipboard.history.isEmpty)
+        }
+        .frame(height: 24)
+    }
+
+    private var scrollIndex: Int {
+        clipboard.history.firstIndex { $0.id == scrollID } ?? 0
+    }
+
+    private func arrow(_ label: String, symbol: String, step: Int) -> some View {
+        let destination = scrollIndex + step
+        return Button {
+            guard clipboard.history.indices.contains(destination) else { return }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                scrollID = clipboard.history[destination].id
+            }
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 9, weight: .semibold))
+                .frame(width: 22, height: 22)
+                .glassControl(in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .help(label)
+        .disabled(!clipboard.history.indices.contains(destination))
+    }
+}
+
+private struct ClipboardHistoryCard: View {
+    let entry: ClipboardMonitor.Entry
+    let isCopied: Bool
+
+    @State private var isHovered = false
+    private let shape = RoundedRectangle(cornerRadius: 11)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 5) {
+                Image(systemName: symbol)
+                    .foregroundStyle(.tint)
+                Text(kind)
+                    .fontWeight(.semibold)
+                    .lineLimit(1)
+                Spacer(minLength: 2)
+                Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                    .foregroundStyle(isCopied ? .white : .white.opacity(isHovered ? 0.9 : 0.42))
+                    .contentTransition(.symbolEffect(.replace))
+                    .accessibilityHidden(true)
+            }
+            .font(.caption2)
+            .padding(.horizontal, 8)
+            .frame(height: 22)
+
+            preview
+                .frame(maxWidth: .infinity)
+                .frame(height: 86)
+                .clipped()
+
+            HStack(spacing: 4) {
+                if let icon = entry.source?.icon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .frame(width: 11, height: 11)
+                        .accessibilityHidden(true)
+                }
+                Text(entry.source?.name ?? "Unknown source")
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 2)
+                if let date = entry.copiedAt {
+                    Text(date, style: .relative)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .accessibilityLabel(date.formatted(date: .abbreviated, time: .shortened))
+                }
+            }
+            .font(.system(size: 9, weight: .medium))
+            .foregroundStyle(.white.opacity(0.68))
+            .padding(.horizontal, 8)
+            .frame(height: 25)
+        }
+        .frame(width: 150)
+        .background(.white.opacity(isHovered ? 0.14 : 0.085), in: shape)
+        .overlay { shape.strokeBorder(.white.opacity(isCopied ? 0.65 : isHovered ? 0.26 : 0.12)) }
+        .clipShape(shape)
+        .contentShape(shape)
+        .onHover { isHovered = $0 }
+        .help(entry.source?.isEstimated == true ? "Copy · Source estimated from the active app" : "Copy")
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(isCopied ? "Copied" : "")
+    }
+
+    @ViewBuilder
+    private var preview: some View {
+        switch entry.content {
+        case .image, .pdf:
+            ZStack(alignment: .bottomTrailing) {
+                Color.black.opacity(0.35)
+                if let image = entry.thumbnail {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(.vertical, 3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    Image(systemName: symbol)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                if let detail = entry.mediaDetail {
+                    Text(detail)
+                        .font(.system(size: 9, weight: .semibold).monospacedDigit())
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(.black.opacity(0.78), in: .rect(cornerRadius: 4))
+                        .padding(4)
+                }
+            }
+        case .files(let urls):
+            if let url = urls.first {
+                VStack(spacing: 4) {
+                    FileThumbnail(url: url, previewSize: 156)
+                        .frame(height: 52)
+                    Text(urls.count == 1 ? url.lastPathComponent : "\(urls.count) files · \(url.lastPathComponent)")
+                        .font(.caption2)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .padding(.horizontal, 7)
+            }
+        case .text(let text, _):
+            if let url = webURL {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(url.host ?? url.absoluteString)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                    Text(String(text.prefix(220)))
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.62))
+                        .lineLimit(3)
+                        .truncationMode(.middle)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(8)
+            } else {
+                Text(String(text.prefix(280)))
+                    .font(.caption)
+                    .lineLimit(5)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(8)
+            }
+        }
+    }
+
+    private var webURL: URL? {
+        guard case .text(let text, _) = entry.content,
+              let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let scheme = url.scheme?.lowercased(), ["https", "http"].contains(scheme),
+              url.host != nil else { return nil }
+        return url
+    }
+
+    private var kind: String {
+        switch entry.content {
+        case .image: "Image"
+        case .pdf: "PDF"
+        case .files(let urls): urls.count == 1 ? "File" : "Files"
+        case .text: webURL == nil ? "Text" : "Link"
+        }
+    }
+
+    private var symbol: String {
+        switch entry.content {
+        case .image: "photo"
+        case .pdf: "doc.richtext"
+        case .files: "doc.on.doc"
+        case .text: webURL == nil ? "text.alignleft" : "link"
         }
     }
 }

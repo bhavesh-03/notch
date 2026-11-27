@@ -47,6 +47,7 @@ struct ClipboardMonitorTests {
         monitor.recordChange(from: pasteboard)
         let entry = try #require(monitor.history.first)
         #expect(entry.thumbnail?.size == NSSize(width: 1, height: 1))
+        #expect(entry.mediaDetail == "1 × 1")
         pasteboard.clearContents()
         #expect(monitor.copy(entry, to: pasteboard))
         #expect(pasteboard.data(forType: pngType) == png)
@@ -72,6 +73,50 @@ struct ClipboardMonitorTests {
         #expect(files == urls)
     }
 
+    @Test func usesSourceMetadataAndHonorsAnExplicitlyUnknownSource() throws {
+        let pasteboard = NSPasteboard.withUniqueName()
+        defer { pasteboard.releaseGlobally() }
+        let monitor = ClipboardMonitor()
+
+        pasteboard.clearContents()
+        pasteboard.setString("One", forType: .string)
+        pasteboard.setString("com.apple.finder", forType: ClipboardMonitor.sourceType)
+        monitor.recordChange(from: pasteboard)
+        let entry = try #require(monitor.history.first)
+        #expect(entry.source?.bundleID == "com.apple.finder")
+        #expect(entry.source?.isEstimated == false)
+        #expect(entry.copiedAt != nil)
+
+        #expect(monitor.copy(entry, to: pasteboard))
+        #expect(pasteboard.string(forType: ClipboardMonitor.sourceType) == "com.apple.finder")
+        #expect(pasteboard.string(forType: .string) == "One")
+
+        pasteboard.clearContents()
+        pasteboard.setString("Two", forType: .string)
+        pasteboard.setString("", forType: ClipboardMonitor.sourceType)
+        monitor.recordChange(from: pasteboard, frontmost: .current)
+        #expect(monitor.history.first?.source == nil)
+    }
+
+    @Test func keepsEntriesFromBeforeSourceTracking() throws {
+        let pasteboard = NSPasteboard.withUniqueName()
+        defer { pasteboard.releaseGlobally() }
+        let folder = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let historyURL = folder.appendingPathComponent("History.plist")
+        let payload = ClipboardMonitor.Payload.text("An older copy", type: NSPasteboard.PasteboardType.string.rawValue)
+        try PropertyListEncoder().encode([payload]).write(to: historyURL)
+
+        let monitor = ClipboardMonitor(historyURL: historyURL)
+        monitor.start(pasteboard: pasteboard)
+        defer { monitor.stop() }
+        let entry = try #require(monitor.history.first)
+        #expect(entry.content == payload)
+        #expect(entry.source == nil)
+        #expect(entry.copiedAt == nil)
+    }
+
     @Test func remembersTenItemsAcrossLaunchesAndClearsThem() throws {
         let pasteboard = NSPasteboard.withUniqueName()
         defer { pasteboard.releaseGlobally() }
@@ -91,6 +136,7 @@ struct ClipboardMonitorTests {
         let relaunched = ClipboardMonitor(historyURL: url)
         relaunched.start(pasteboard: pasteboard)
         #expect(relaunched.history.map(\.content) == monitor.history.map(\.content))
+        #expect(relaunched.history.first?.copiedAt == monitor.history.first?.copiedAt)
         defer { relaunched.stop() }
 
         let original = String(repeating: "Original text ", count: 500)

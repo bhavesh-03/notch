@@ -1,5 +1,6 @@
 import AppKit
 import ImageIO
+import PDFKit
 import UniformTypeIdentifiers
 
 @Observable
@@ -14,25 +15,88 @@ final class ClipboardMonitor {
         case text(String, type: String)
     }
 
-    struct Entry: Identifiable {
-        let id = UUID()
-        let content: Payload
-        let thumbnail: NSImage?
+    struct Source: Codable, Equatable, Sendable {
+        let name: String
+        let bundleID: String?
+        let isEstimated: Bool
 
-        init(content: Payload) {
+        var icon: NSImage? {
+            guard let bundleID, let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
+                return nil
+            }
+            return NSWorkspace.shared.icon(forFile: url.path)
+        }
+    }
+
+    private struct Record: Codable, Sendable {
+        let content: Payload
+        let copiedAt: Date?
+        let source: Source?
+    }
+
+    struct Entry: Identifiable {
+        let id: UUID
+        let content: Payload
+        let copiedAt: Date?
+        let source: Source?
+        let thumbnail: NSImage?
+        let mediaDetail: String?
+
+        init(content: Payload, copiedAt: Date? = nil, source: Source? = nil, replacing previous: Entry? = nil) {
+            id = previous?.id ?? UUID()
             self.content = content
-            if case .image(let data, _) = content,
-               let source = CGImageSourceCreateWithData(data as CFData, nil),
-               let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
-                   kCGImageSourceCreateThumbnailFromImageAlways: true,
-                   kCGImageSourceCreateThumbnailWithTransform: true,
-                   kCGImageSourceThumbnailMaxPixelSize: 320
-               ] as CFDictionary) {
+            self.copiedAt = copiedAt
+            self.source = source
+
+            if let previous {
+                thumbnail = previous.thumbnail
+                mediaDetail = previous.mediaDetail
+            } else if case .image(let data, _) = content,
+                      let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
+                      let image = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, [
+                          kCGImageSourceCreateThumbnailFromImageAlways: true,
+                          kCGImageSourceCreateThumbnailWithTransform: true,
+                          kCGImageSourceThumbnailMaxPixelSize: 420
+                      ] as CFDictionary) {
                 thumbnail = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
+                let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [CFString: Any]
+                if let width = properties?[kCGImagePropertyPixelWidth] as? Int,
+                   let height = properties?[kCGImagePropertyPixelHeight] as? Int {
+                    let orientation = properties?[kCGImagePropertyOrientation] as? Int ?? 1
+                    mediaDetail = (5...8).contains(orientation) ? "\(height) × \(width)" : "\(width) × \(height)"
+                } else {
+                    mediaDetail = nil
+                }
+            } else if case .pdf(let data) = content, let document = PDFDocument(data: data) {
+                thumbnail = document.page(at: 0)?.thumbnail(of: NSSize(width: 240, height: 260), for: .cropBox)
+                mediaDetail = document.pageCount == 1 ? "1 page" : "\(document.pageCount) pages"
             } else {
                 thumbnail = nil
+                mediaDetail = nil
             }
         }
+    }
+
+    static let sourceType = NSPasteboard.PasteboardType("org.nspasteboard.source")
+    private static let remoteType = NSPasteboard.PasteboardType("com.apple.is-remote-clipboard")
+
+    static func source(from pasteboard: NSPasteboard, frontmost: NSRunningApplication?) -> Source? {
+        if pasteboard.availableType(from: [sourceType]) != nil {
+            guard let identifier = pasteboard.string(forType: sourceType), !identifier.isEmpty else { return nil }
+            let app = NSRunningApplication.runningApplications(withBundleIdentifier: identifier).first
+            let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: identifier)
+            let bundle = url.flatMap(Bundle.init(url:))
+            let name = app?.localizedName
+                ?? (bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
+                ?? url?.deletingPathExtension().lastPathComponent
+                ?? identifier
+            return Source(name: name, bundleID: identifier, isEstimated: false)
+        }
+        if pasteboard.availableType(from: [remoteType]) != nil {
+            return Source(name: "Universal Clipboard", bundleID: nil, isEstimated: false)
+        }
+        guard let name = frontmost?.localizedName else { return nil }
+        return Source(name: name, bundleID: frontmost?.bundleIdentifier, isEstimated: true)
     }
 
     private(set) var history: [Entry] = []
@@ -54,8 +118,15 @@ final class ClipboardMonitor {
         guard watchTask == nil else { return }
         if let historyURL {
             let data = Self.storageQueue.sync { try? Data(contentsOf: historyURL) }
-            if let data, let payloads = try? PropertyListDecoder().decode([Payload].self, from: data) {
-                history = payloads.prefix(Self.capacity).map { Entry(content: $0) }
+            if let data {
+                let decoder = PropertyListDecoder()
+                if let records = try? decoder.decode([Record].self, from: data) {
+                    history = records.prefix(Self.capacity).map {
+                        Entry(content: $0.content, copiedAt: $0.copiedAt, source: $0.source)
+                    }
+                } else if let payloads = try? decoder.decode([Payload].self, from: data) {
+                    history = payloads.prefix(Self.capacity).map { Entry(content: $0) }
+                }
             }
         }
         changeCount = pasteboard.changeCount
@@ -63,7 +134,7 @@ final class ClipboardMonitor {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(300))
                 guard !Task.isCancelled, let self else { break }
-                recordChange(from: pasteboard)
+                recordChange(from: pasteboard, frontmost: NSWorkspace.shared.frontmostApplication)
             }
         }
     }
@@ -75,13 +146,15 @@ final class ClipboardMonitor {
         clear()
     }
 
-    func recordChange(from pasteboard: NSPasteboard) {
+    func recordChange(from pasteboard: NSPasteboard, frontmost: NSRunningApplication? = nil) {
         let count = pasteboard.changeCount
         guard count != changeCount else { return }
         changeCount = count
 
         if let payload = Self.read(from: pasteboard) {
-            let latest = history.first { $0.content == payload } ?? Entry(content: payload)
+            let previous = history.first { $0.content == payload }
+            let latest = Entry(content: payload, copiedAt: .now, source: Self.source(from: pasteboard, frontmost: frontmost),
+                               replacing: previous)
             history.removeAll { $0.id == latest.id }
             history.insert(latest, at: 0)
             if history.count > Self.capacity { history.removeLast() }
@@ -110,6 +183,15 @@ final class ClipboardMonitor {
                 pasteboard.setString(text, forType: .URL)
             }
         }
+        // File URLs occupy separate pasteboard items. Preserve the batch as written.
+        if copied, case .files = entry.content {
+            changeCount = pasteboard.changeCount
+            return true
+        }
+        if copied {
+            let bundleID = entry.source?.isEstimated == false ? entry.source?.bundleID : nil
+            pasteboard.setString(bundleID ?? "", forType: Self.sourceType)
+        }
         changeCount = pasteboard.changeCount
         return copied
     }
@@ -126,13 +208,13 @@ final class ClipboardMonitor {
 
     private func save() {
         guard let historyURL else { return }
-        let payloads = history.map(\.content)
+        let records = history.map { Record(content: $0.content, copiedAt: $0.copiedAt, source: $0.source) }
         Self.storageQueue.async {
             do {
                 let directory = historyURL.deletingLastPathComponent()
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
                                                         attributes: [.posixPermissions: 0o700])
-                let data = try PropertyListEncoder().encode(payloads)
+                let data = try PropertyListEncoder().encode(records)
                 try data.write(to: historyURL, options: .atomic)
                 try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: historyURL.path)
             } catch {
