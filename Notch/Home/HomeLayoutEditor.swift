@@ -206,7 +206,9 @@ struct AddWidgetMenu: View {
         Menu {
             ForEach(missing) { kind in
                 Button {
-                    settings.homeLayout.add(kind)
+                    let visible = Set(HomeWidgetKind.allCases.filter { settings.isVisible($0.feature) })
+                    let columns = HomeLayout.columns(forWidth: settings.width.points)
+                    settings.homeLayout.addVisible(kind, columns: columns, visible: visible)
                 } label: {
                     Label {
                         Text(kind.title)

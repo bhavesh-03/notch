@@ -28,11 +28,12 @@ struct NowPlayingMonitorTests {
         #expect(monitor.earPriority == 3, "switching away brings the ears back")
     }
 
-    @Test func thePlayerRowStaysWhileThePlayingAppIsInFront() {
+    @Test func mediaRemainsAvailableToTheWidgetWhileThePlayingAppIsInFront() {
         let monitor = NowPlayingMonitor()
         monitor.frontmostAppChanged(to: "com.music")
         monitor.receive(.only(info(app: "com.music")))
-        #expect(monitor.hasHeadline)
+        #expect(monitor.info != nil)
+        #expect(!monitor.hasHeadline, "media lives in the Home widget grid")
     }
 
     @Test func announcesANewTrackFromAnotherApp() {

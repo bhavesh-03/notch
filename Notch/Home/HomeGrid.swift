@@ -64,6 +64,9 @@ struct HomeWidgetView: View {
         case .battery: BatteryWidget(monitor: viewModel.battery, size: size)
         case .timer: TimerWidget(timer: viewModel.timer, size: size)
         case .calendar: CalendarWidget(calendar: viewModel.calendar, size: size)
+        case .calendarMonth: MonthWidget(calendar: viewModel.calendar, size: size)
+        case .nowPlaying: NowPlayingWidget(monitor: viewModel.nowPlaying, size: size)
+        case .weather: WeatherWidget(monitor: viewModel.weather, location: viewModel.settings.weatherLocation, size: size)
         case .cpu, .gpu, .memory, .temperature:
             StatsWidget(kind: kind, size: size, monitor: viewModel.stats)
         case .devices:

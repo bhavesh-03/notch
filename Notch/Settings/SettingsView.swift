@@ -34,7 +34,7 @@ enum SettingsTab: CaseIterable {
     var size: CGSize {
         switch self {
         case .features: CGSize(width: 500, height: 540)
-        case .home: CGSize(width: 500, height: 400)
+        case .home: CGSize(width: 500, height: 540)
         case .look: CGSize(width: 500, height: 440)
         case .behavior: CGSize(width: 500, height: 492)
         case .timer: CGSize(width: 500, height: 568)
@@ -343,6 +343,10 @@ struct HomeSettings: View {
             } footer: {
                 Text("You can also arrange Home right in the notch: right-click it and choose Edit Home.")
                     .foregroundStyle(.secondary)
+            }
+
+            if settings.isVisible(.weather) {
+                WeatherSettings(settings: settings)
             }
         }
     }

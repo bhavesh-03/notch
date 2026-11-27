@@ -28,7 +28,10 @@ Notch lives in the space around your camera. At rest it's just the notch, with a
 - **Pop-ups** for plugging in the charger, a finished timer, a starting meeting and a new track.
 
 **Home**
-- A grid of **widgets** you drag, resize and arrange: Battery, Timer, Calendar, CPU, GPU, Memory, Temperature, Devices, Notes and Calculator.
+- A grid of **widgets** you drag, resize and arrange: Now Playing, Weather, Calendar, Calendar Month, Battery, Timer, CPU, GPU, Memory, Temperature, Devices, Notes and Calculator.
+- **Now Playing** fits in the widget grid. Resize it for transport controls and a seek bar, or right-click it to switch between available players.
+- **Calendar Month** highlights today. Use a large tile for the month grid, or a smaller tile for a date glance. The Calendar widget still shows upcoming events.
+- **Weather** uses the city you choose under **Settings → Home**. Forecast data comes from [Open-Meteo](https://open-meteo.com/).
 - **System stats** with live graphs, sampled only while you're looking.
 
 **Tools**

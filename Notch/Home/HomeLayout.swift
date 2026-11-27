@@ -21,7 +21,7 @@ enum WidgetSize: String, CaseIterable, Codable, Identifiable {
 
 /// Something that can sit on Home. One of each at most.
 enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
-    case battery, timer, calendar, cpu, gpu, memory, temperature, devices, notes, calculator
+    case battery, timer, calendar, cpu, gpu, memory, temperature, devices, notes, calculator, nowPlaying, weather, calendarMonth
 
     var id: String { rawValue }
 
@@ -30,7 +30,9 @@ enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .battery: .battery
         case .timer: .timer
-        case .calendar: .calendar
+        case .calendar, .calendarMonth: .calendar
+        case .nowPlaying: .nowPlaying
+        case .weather: .weather
         case .cpu, .gpu, .memory, .temperature: .systemStats
         case .devices: .devices
         case .notes: .notes
@@ -43,6 +45,9 @@ enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
         case .battery: "Battery"
         case .timer: "Timer"
         case .calendar: "Calendar"
+        case .calendarMonth: "Calendar Month"
+        case .nowPlaying: "Now Playing"
+        case .weather: "Weather"
         case .cpu: "CPU"
         case .gpu: "GPU"
         case .memory: "Memory"
@@ -50,6 +55,14 @@ enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
         case .devices: "Devices"
         case .notes: "Notes"
         case .calculator: "Calculator"
+        }
+    }
+
+    var preferredSize: WidgetSize {
+        switch self {
+        case .nowPlaying: .wide
+        case .calendarMonth: .large
+        default: .small
         }
     }
 
@@ -61,6 +74,9 @@ enum HomeWidgetKind: String, CaseIterable, Codable, Identifiable {
         case .battery: "battery.75percent"
         case .timer: "timer"
         case .calendar: "calendar"
+        case .calendarMonth: "calendar"
+        case .nowPlaying: "play.fill"
+        case .weather: "cloud.sun"
         case .cpu: "cpu"
         case .gpu: "square.stack.3d.up"
         case .memory: "memorychip"
@@ -86,8 +102,20 @@ struct HomeLayout: Codable, Equatable {
 
     static let rows = 2
 
-    /// Fills five columns exactly: the timer's full view, the calendar, and small vitals around them.
+    /// Keep the media, calendar and weather cards visible at every notch width.
     static let `default` = HomeLayout(widgets: [
+        HomeWidget(kind: .nowPlaying, size: .wide),
+        HomeWidget(kind: .calendar, size: .wide),
+        HomeWidget(kind: .weather, size: .small),
+        HomeWidget(kind: .battery, size: .small),
+        HomeWidget(kind: .timer, size: .small),
+        HomeWidget(kind: .cpu, size: .small),
+        HomeWidget(kind: .gpu, size: .small),
+        HomeWidget(kind: .memory, size: .small),
+        HomeWidget(kind: .temperature, size: .small),
+    ])
+
+    static let legacyDefault = HomeLayout(widgets: [
         HomeWidget(kind: .timer, size: .large),
         HomeWidget(kind: .calendar, size: .wide),
         HomeWidget(kind: .battery, size: .small),
@@ -264,6 +292,16 @@ extension HomeLayout {
     mutating func add(_ kind: HomeWidgetKind, size: WidgetSize = .small) {
         guard !contains(kind) else { return }
         widgets.append(HomeWidget(kind: kind, size: size))
+    }
+
+    /// If Home is full, make the newly added widget visible while keeping every saved widget.
+    mutating func addVisible(_ kind: HomeWidgetKind, columns: Int, visible: Set<HomeWidgetKind>) {
+        guard !contains(kind), visible.contains(kind) else { return }
+        add(kind, size: kind.preferredSize)
+        let shown = HomeLayout(widgets: widgets.filter { visible.contains($0.kind) })
+        if shown.arranged(columns: columns).overflow.contains(where: { $0.kind == kind }) {
+            move(kind, toColumn: 0, row: 0, columns: columns, visible: visible)
+        }
     }
 
     mutating func remove(_ kind: HomeWidgetKind) {

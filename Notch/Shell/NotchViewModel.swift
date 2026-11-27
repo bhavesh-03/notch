@@ -37,6 +37,7 @@ final class NotchViewModel {
     let battery = BatteryMonitor()
     let timer: TimerController
     let calendar = CalendarMonitor()
+    let weather = WeatherMonitor()
     let shelf = ShelfStore()
     let clipboard: ClipboardMonitor
     let nowPlaying = NowPlayingMonitor()
@@ -142,7 +143,7 @@ final class NotchViewModel {
         }
     }
     /// Every module, whether or not the user shows it.
-    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, stats, levels, bluetooth, notes, calculator, terminal, mirror, clipboard] }
+    var allModules: [any NotchModule] { [battery, timer, calendar, shelf, nowPlaying, stats, levels, bluetooth, notes, calculator, terminal, mirror, clipboard, weather] }
 
     /// Home's widgets in the user's order and sizes, minus those whose feature is hidden.
     var homeWidgets: [HomeWidget] {

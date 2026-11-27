@@ -101,8 +101,8 @@ struct NotchSettingsTests {
 
     @Test func aSavedOrderIsRepaired() {
         // From an older version (no Mirror yet), with a duplicate and a name this version doesn't know.
-        defaults.set(["timer", "battery", "timer", "weather"], forKey: "settings.featureOrder")
-        #expect(settings().featureOrder == [.timer, .battery, .calendar, .files, .nowPlaying, .systemStats, .levels, .devices, .notes, .calculator, .terminal, .mirror, .clipboard])
+        defaults.set(["timer", "battery", "timer", "futureFeature"], forKey: "settings.featureOrder")
+        #expect(settings().featureOrder == [.timer, .battery, .calendar, .files, .nowPlaying, .systemStats, .levels, .devices, .notes, .calculator, .terminal, .mirror, .clipboard, .weather])
     }
 
     @Test func changesAreReported() {

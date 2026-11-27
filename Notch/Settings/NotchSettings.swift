@@ -108,6 +108,12 @@ final class NotchSettings {
         }
     }
 
+    var weatherLocation: WeatherLocation? {
+        didSet {
+            defaults.set(weatherLocation.flatMap { try? JSONEncoder().encode($0) }, forKey: Keys.weatherLocation)
+        }
+    }
+
     /// Called when a setting changes the notch's geometry (its width, or its ears).
     @ObservationIgnored var onGeometryChanged: (() -> Void)?
 
@@ -133,7 +139,9 @@ final class NotchSettings {
         hapticFeedbackEnabled = defaults.object(forKey: Keys.hapticFeedbackEnabled) as? Bool ?? false
         showsSettingsButton = defaults.object(forKey: Keys.showsSettingsButton) as? Bool ?? true
         mutedPopUps = Set(Self.features(forKey: Keys.mutedPopUps, in: defaults))
-        homeLayout = defaults.data(forKey: Keys.homeLayout).flatMap { try? JSONDecoder().decode(HomeLayout.self, from: $0) } ?? .default
+        let savedLayout = defaults.data(forKey: Keys.homeLayout).flatMap { try? JSONDecoder().decode(HomeLayout.self, from: $0) }
+        homeLayout = savedLayout == .legacyDefault ? .default : savedLayout ?? .default
+        weatherLocation = defaults.data(forKey: Keys.weatherLocation).flatMap { try? JSONDecoder().decode(WeatherLocation.self, from: $0) }
         timerLength = (defaults.object(forKey: Keys.timerLength) as? Double)?.clamped(to: TimerState.durationRange) ?? Self.defaultTimerLength
         timerPresets = Self.normalized(presets: defaults.array(forKey: Keys.timerPresets) as? [Double])
         showsTimerPresets = defaults.object(forKey: Keys.showsTimerPresets) as? Bool ?? true
@@ -285,6 +293,7 @@ final class NotchSettings {
         static let showsSettingsButton = "settings.showsSettingsButton"
         static let mutedPopUps = "settings.mutedPopUps"
         static let homeLayout = "settings.homeLayout"
+        static let weatherLocation = "settings.weatherLocation"
         static let timerLength = "settings.timerLength"
         static let timerPresets = "settings.timerPresets"
         static let showsTimerPresets = "settings.showsTimerPresets"

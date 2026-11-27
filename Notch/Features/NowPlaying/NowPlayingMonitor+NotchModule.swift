@@ -10,9 +10,6 @@ extension NowPlayingMonitor: NotchModule {
     }
 
 
-    /// Shown whenever there's something to control, playing or paused.
-    var hasHeadline: Bool { info != nil }
-
     @ViewBuilder
     func content(for placement: NotchPlacement) -> some View {
         if let info {
@@ -28,8 +25,6 @@ extension NowPlayingMonitor: NotchModule {
                 }
             case .trailingEar:
                 PlayingIndicator(isPlaying: info.isPlaying)
-            case .headline:
-                PlayerRow(monitor: self, info: info)
             case .activityLeading:
                 ArtworkTile(info: info)
                     .frame(width: 26, height: 26)
@@ -41,134 +36,112 @@ extension NowPlayingMonitor: NotchModule {
                     .font(.caption)
                     .lineLimit(1)
                     .padding(.horizontal, 16)
-            case .page:
+            case .page, .headline:
                 EmptyView()
             }
         }
     }
 }
 
-/// Artwork-sized app icon, title, artist, live progress, and transport controls. With several apps
-/// holding a track, their icons appear on the right to switch which one the row shows and controls.
-private struct PlayerRow: View {
+/// A media card that fits the Home grid and uses the same playback routing as the notch ears.
+struct NowPlayingWidget: View {
     let monitor: NowPlayingMonitor
-    let info: NowPlayingInfo
+    let size: WidgetSize
 
-    private var canSeek: Bool {
+    var body: some View {
+        if let info = monitor.info {
+            card(info)
+                .contextMenu {
+                    if canControl(info) {
+                        Button("Previous Track") { monitor.send(.previous, to: info) }
+                        Button("Next Track") { monitor.send(.next, to: info) }
+                    }
+                    if monitor.players.count > 1 {
+                        Menu("Playback Source") {
+                            ForEach(monitor.players) { player in
+                                Button(player.appName) { monitor.select(player) }
+                            }
+                        }
+                    }
+                }
+        } else {
+            VStack(alignment: .leading, spacing: 3) {
+                Label("Now Playing", systemImage: "music.note")
+                    .font(.caption.weight(.semibold))
+                Text("Nothing playing")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.60))
+            }
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        }
+    }
+
+    private func card(_ info: NowPlayingInfo) -> some View {
+        let wide = size.columns == 2
+        let tall = size.rows == 2
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 5) {
+                if wide || tall {
+                    ArtworkTile(info: info)
+                        .frame(width: tall ? 31 : 21, height: tall ? 31 : 21)
+                        .accessibilityHidden(true)
+                }
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(info.title)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(tall ? 2 : 1)
+                    if wide && !info.artist.isEmpty {
+                        Text(info.artist)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.62))
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if wide && canControl(info) {
+                    control("backward.fill", "Previous track", .previous, info)
+                }
+                control(primarySymbol(info), primaryTitle(info), .toggle, info)
+                if wide && canControl(info) {
+                    control("forward.fill", "Next track", .next, info)
+                }
+            }
+            if (wide || tall) && info.duration > 0 {
+                PlaybackProgress(info: info, monitor: monitor, canSeek: canControl(info), showsTimes: tall && wide)
+                    .id(info.id)
+            }
+        }
+        .buttonStyle(.plain)
+        .animation(.snappy, value: info.isPlaying)
+    }
+
+    private func canControl(_ info: NowPlayingInfo) -> Bool {
         monitor.route(for: info) != .openApp
     }
 
-    var body: some View {
-        HStack(spacing: 12) {
-            ArtworkTile(info: info)
-                .frame(width: 44, height: 44)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(info.title)
-                    .font(.callout.weight(.semibold))
-                    .lineLimit(1)
-                Text([info.artist, info.appName].filter { !$0.isEmpty }.joined(separator: " · "))
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
-                    .lineLimit(1)
-                if info.duration > 0 {
-                    PlaybackProgress(info: info, monitor: monitor, canSeek: canSeek)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            controls
-                .buttonStyle(.plain)
-
-            if monitor.players.count > 1 {
-                PlayerSwitcher(monitor: monitor, shown: info)
-            }
-        }
-        .animation(.snappy, value: info.isPlaying)
-        .animation(.snappy, value: info.id)
+    private func primarySymbol(_ info: NowPlayingInfo) -> String {
+        guard canControl(info) else { return "arrow.up.forward.app" }
+        return info.isPlaying ? "pause.fill" : "play.fill"
     }
 
-    @ViewBuilder
-    private var controls: some View {
-        if monitor.route(for: info) == .openApp {
-            // This player only takes commands while it's the Mac's current player, so rather than send
-            // one that might reach another app, offer the app itself.
-            Button {
-                monitor.send(.toggle, to: info)
-            } label: {
-                Label("Open", systemImage: "arrow.up.forward.app")
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .frame(height: 28)
-                    .glassControl(in: Capsule())
-            }
-            .help("\(info.appName) can be controlled here while it's the Mac's current player. Open it to play or pause.")
-        } else {
-            HStack(spacing: 8) {
-                control("backward.fill", .previous)
-                control(info.isPlaying ? "pause.fill" : "play.fill", .toggle)
-                    .contentTransition(.symbolEffect(.replace))
-                control("forward.fill", .next)
-            }
-        }
+    private func primaryTitle(_ info: NowPlayingInfo) -> String {
+        guard canControl(info) else { return "Open \(info.appName)" }
+        return info.isPlaying ? "Pause" : "Play"
     }
 
-    private func control(_ symbol: String, _ command: NowPlayingBridgeProcess.Command) -> some View {
+    private func control(_ symbol: String, _ title: String, _ command: NowPlayingBridgeProcess.Command,
+                         _ info: NowPlayingInfo) -> some View {
         Button {
             monitor.send(command, to: info)
         } label: {
             Image(systemName: symbol)
-                .frame(width: 28, height: 28)
+                .font(.system(size: 9, weight: .semibold))
+                .frame(width: 19, height: 19)
                 .glassControl(in: Circle())
         }
-    }
-}
-
-/// The apps holding a track, as small icons. The shown one is lit; a playing one has a dot.
-private struct PlayerSwitcher: View {
-    let monitor: NowPlayingMonitor
-    let shown: NowPlayingInfo
-    @Namespace private var selection
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(monitor.players) { player in
-                let isShown = player.id == shown.id
-                Button {
-                    monitor.select(player)
-                } label: {
-                    SourceAppIcon(bundleIdentifier: player.appBundleIdentifier)
-                        .frame(width: 20, height: 20)
-                        .padding(4)
-                        .background {
-                            if isShown {
-                                Color.clear.matchedGeometryEffect(id: "shown-player", in: selection)
-                            }
-                        }
-                        .opacity(isShown ? 1 : 0.5)
-                        .overlay(alignment: .bottom) {
-                            if player.isPlaying {
-                                Circle().fill(.white).frame(width: 3, height: 3).offset(y: 3)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help([player.appName, player.title].filter { !$0.isEmpty }.joined(separator: " · "))
-            }
-        }
-        .background {
-            // One glass square behind the icons that slides to whichever app is shown.
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(.clear)
-                .glassSurface(in: .rect(cornerRadius: 7, style: .continuous), fallbackOpacity: 0.2)
-                .matchedGeometryEffect(id: "shown-player", in: selection, isSource: false)
-        }
-        .animation(.snappy, value: shown.id)
-        .padding(.leading, 4)
-        .overlay(alignment: .leading) {
-            Rectangle().fill(.white.opacity(0.15)).frame(width: 1, height: 24).offset(x: -6)
-        }
+        .accessibilityLabel(title)
+        .help(title)
     }
 }
 
@@ -177,6 +150,7 @@ private struct PlaybackProgress: View {
     let info: NowPlayingInfo
     let monitor: NowPlayingMonitor
     let canSeek: Bool
+    let showsTimes: Bool
     @Environment(\.notchAccent) private var accent
     @State private var isDragging = false
     @State private var dragFraction: CGFloat?
@@ -197,7 +171,7 @@ private struct PlaybackProgress: View {
             let fraction = activeFraction(live: liveFraction)
             let displayElapsed = fraction * info.duration
             HStack(spacing: 6) {
-                Text(Self.format(displayElapsed))
+                if showsTimes { Text(Self.format(displayElapsed)) }
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
                         Capsule()
@@ -245,7 +219,7 @@ private struct PlaybackProgress: View {
                 .animation(.easeOut(duration: 0.15), value: canSeek && isHovering)
                 .animation(.easeOut(duration: 0.15), value: canSeek && isDragging)
                 .onHover { hovering in if canSeek { isHovering = hovering } }
-                Text("-" + Self.format(info.duration - displayElapsed))
+                if showsTimes { Text("-" + Self.format(info.duration - displayElapsed)) }
             }
             .font(.system(size: 9).monospacedDigit())
             .foregroundStyle(.white.opacity(0.6))

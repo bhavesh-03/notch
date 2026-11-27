@@ -48,6 +48,23 @@ struct HomeLayoutTests {
         #expect(overflow.map(\.kind) == [.temperature])
     }
 
+    @Test func mediaCalendarAndWeatherFitAtEveryNotchWidth() {
+        for columns in 4...6 {
+            let kinds = HomeLayout.default.arranged(columns: columns).placed.map(\.widget.kind)
+            #expect(kinds.contains(.nowPlaying))
+            #expect(kinds.contains(.calendar))
+            #expect(kinds.contains(.weather))
+        }
+    }
+
+    @Test func addingAMonthToAFullHomeMakesItVisibleAndKeepsOtherWidgets() {
+        var layout = HomeLayout.default
+        layout.addVisible(.calendarMonth, columns: 5, visible: Set(HomeWidgetKind.allCases))
+        let month = layout.arranged(columns: 5).placed.first { $0.widget.kind == .calendarMonth }
+        #expect(month?.widget.size == .large)
+        #expect(layout.widgets.filter { $0.kind != .calendarMonth } == HomeLayout.default.widgets)
+    }
+
     @Test func nothingOverlaps() {
         let (placed, _) = HomeLayout.default.arranged(columns: 6)
         var cells = Set<[Int]>()
@@ -61,7 +78,7 @@ struct HomeLayoutTests {
     }
 
     @Test func savedLayoutsSurviveUnknownKindsAndRepeats() throws {
-        let json = #"{"widgets":[{"kind":"cpu","size":"wide"},{"kind":"weather","size":"small"},{"kind":"cpu","size":"small"},{"kind":"timer","size":"huge"},{"kind":"gpu","size":"tall"}]}"#
+        let json = #"{"widgets":[{"kind":"cpu","size":"wide"},{"kind":"futureWidget","size":"small"},{"kind":"cpu","size":"small"},{"kind":"timer","size":"huge"},{"kind":"gpu","size":"tall"}]}"#
         let decoded = try JSONDecoder().decode(HomeLayout.self, from: Data(json.utf8))
         #expect(decoded == layout((.cpu, .wide), (.gpu, .tall)))
     }
@@ -139,6 +156,16 @@ struct HomeWidgetsTests {
         #expect(settings.homeLayout == .default)
         settings.homeLayout = HomeLayout(widgets: [HomeWidget(kind: .cpu, size: .large)])
         #expect(NotchSettings(defaults: UserDefaults(suiteName: suite)!).homeLayout.widgets == [HomeWidget(kind: .cpu, size: .large)])
+    }
+
+    @Test func onlyTheUnmodifiedLegacyLayoutPicksUpTheNewDefaults() throws {
+        let defaults = try #require(UserDefaults(suiteName: "HomeWidgetsTests.\(UUID().uuidString)"))
+        defaults.set(try JSONEncoder().encode(HomeLayout.legacyDefault), forKey: "settings.homeLayout")
+        #expect(NotchSettings(defaults: defaults).homeLayout == .default)
+        var custom = HomeLayout.legacyDefault
+        custom.resize(.calendar, to: .large)
+        defaults.set(try JSONEncoder().encode(custom), forKey: "settings.homeLayout")
+        #expect(NotchSettings(defaults: defaults).homeLayout == custom)
     }
 
     @Test func hidingAFeatureHidesItsWidgets() {

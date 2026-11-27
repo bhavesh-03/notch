@@ -17,6 +17,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
     case terminal
     case mirror
     case clipboard
+    case weather
 
     var id: String { rawValue }
 
@@ -56,6 +57,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .calculator: "Calculator"
         case .terminal: "Terminal"
         case .clipboard: "Clipboard"
+        case .weather: "Weather"
         }
     }
 
@@ -74,6 +76,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .calculator: NotchIcon.calculator   // our own glyph: SF Symbols has no calculator
         case .terminal: "terminal"
         case .clipboard: "clipboard"
+        case .weather: "cloud.sun"
         }
     }
 
@@ -92,6 +95,7 @@ enum NotchFeature: String, CaseIterable, Codable, Identifiable {
         case .calculator: "A calculator from a button beside the camera, and a Home widget"
         case .terminal: "Your shell in its own tab. Off until you turn it on"
         case .clipboard: "Keeps your last 10 copies on this Mac. Off until you turn it on"
+        case .weather: "Current conditions and today’s high and low for a city you choose"
         }
     }
 }
