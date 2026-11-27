@@ -342,8 +342,8 @@ struct NotchView: View {
         VStack(spacing: 0) {
             Color.clear.frame(height: geometry.notchRect.height)
             AnyView(module.content(for: .page))
-                .padding(.horizontal, 24)
-                .padding(.top, 2)
+                .padding(.horizontal, NotchGeometry.tabPageHorizontalInset)
+                .padding(.top, NotchGeometry.tabPageTopInset)
                 .padding(.bottom, 10)
                 .frame(maxHeight: .infinity)
         }

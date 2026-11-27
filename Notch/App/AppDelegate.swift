@@ -232,32 +232,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handleScrollWheel(_ event: NSEvent) {
-        guard let viewModel, viewModel.isExpanded, viewModel.settings.swipeNavigationEnabled, !viewModel.isEditingHome, !viewModel.isEditingText else { return }
-        // Modal pages like Timer and Calendar handle their own scrolling and shouldn't swipe tabs
-        guard viewModel.selectedTabModule?.tab?.style != .page,
-              viewModel.selectedTabModule?.feature != .files,
-              viewModel.selectedTabModule?.feature != .clipboard else { return }
-
-        let mouse = NSEvent.mouseLocation
-        let swipeStartRect = viewModel.geometry.panelRect
-
         if event.phase == .began {
-            // Use the full panel, not the currently visible shape, so short pages can still start a swipe.
-            guard swipeStartRect.contains(mouse) else { return }
-            isTrackingSwipeGesture = true
+            isTrackingSwipeGesture = viewModel?.canStartTabSwipe(at: NSEvent.mouseLocation) == true
         }
-
-        guard isTrackingSwipeGesture else { return }
+        defer {
+            if event.phase == .ended || event.phase == .cancelled {
+                isTrackingSwipeGesture = false
+            }
+        }
+        guard isTrackingSwipeGesture, let viewModel, viewModel.allowsTabSwipes else { return }
 
         swipeTracker.handleScrollWheel(event) { [weak viewModel] swipedLeft in
             guard let viewModel else { return }
             withAnimation(NotchMotion.earHandover(reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion, speed: viewModel.settings.animationSpeed.multiplier)) {
                 viewModel.navigateTab(forward: swipedLeft)
             }
-        }
-
-        if event.phase == .ended || event.phase == .cancelled {
-            isTrackingSwipeGesture = false
         }
     }
 

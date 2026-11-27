@@ -108,6 +108,18 @@ final class NotchViewModel {
         return [nil] + tabs + buttons
     }
 
+    var allowsTabSwipes: Bool {
+        isExpanded && settings.swipeNavigationEnabled && !isEditingHome && !isEditingText
+            && selectedTabModule?.tab?.style != .page
+    }
+
+    func canStartTabSwipe(at point: CGPoint) -> Bool {
+        guard allowsTabSwipes, geometry.panelRect.contains(point) else { return false }
+        // Files scrolls vertically. Clipboard only needs horizontal swipes over overflowing cards.
+        return selectedTabModule !== clipboard
+            || !ClipboardGalleryLayout.capturesSwipe(at: point, in: geometry, itemCount: clipboard.history.count)
+    }
+
     /// Moves to the next (forward = true) or previous (forward = false) tab, stopping at edges.
     func navigateTab(forward: Bool) {
         // Modal pages (like Timer and Calendar) only open when clicked, not via swipe.

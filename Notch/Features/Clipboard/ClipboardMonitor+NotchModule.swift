@@ -1,5 +1,23 @@
 import SwiftUI
 
+enum ClipboardGalleryLayout {
+    static let headerHeight: CGFloat = 24
+    static let headerSpacing: CGFloat = 7
+    static let cardWidth: CGFloat = 150
+    static let cardSpacing: CGFloat = 9
+    static let galleryHeight: CGFloat = 145
+
+    static func capturesSwipe(at point: CGPoint, in geometry: NotchGeometry, itemCount: Int) -> Bool {
+        let width = geometry.expandedWidth - 2 * NotchGeometry.tabPageHorizontalInset
+        let cardsWidth = CGFloat(itemCount) * cardWidth + CGFloat(max(0, itemCount - 1)) * cardSpacing
+        guard cardsWidth > width else { return false }
+        let top = geometry.notchRect.minY - NotchGeometry.tabPageTopInset - headerHeight - headerSpacing
+        let gallery = CGRect(x: geometry.notchRect.midX - width / 2, y: top - galleryHeight,
+                             width: width, height: galleryHeight)
+        return gallery.contains(point)
+    }
+}
+
 extension ClipboardMonitor: NotchModule {
     var feature: NotchFeature { .clipboard }
     var earPriority: Int? { nil }
@@ -33,7 +51,7 @@ private struct ClipboardHistoryPage: View {
     @State private var scrollID: UUID?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: ClipboardGalleryLayout.headerSpacing) {
             header
             if clipboard.history.isEmpty {
                 ContentUnavailableView("Clipboard is empty", systemImage: "clipboard",
@@ -41,7 +59,7 @@ private struct ClipboardHistoryPage: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(.horizontal) {
-                    LazyHStack(spacing: 9) {
+                    LazyHStack(spacing: ClipboardGalleryLayout.cardSpacing) {
                         ForEach(clipboard.history) { entry in
                             Button {
                                 if clipboard.copy(entry) { copiedID = entry.id }
@@ -58,7 +76,7 @@ private struct ClipboardHistoryPage: View {
                 }
                 .scrollPosition(id: $scrollID)
                 .scrollTargetBehavior(.viewAligned)
-                .frame(height: 145)
+                .frame(height: ClipboardGalleryLayout.galleryHeight)
                 .frame(maxHeight: .infinity, alignment: .top)
             }
         }
@@ -95,7 +113,7 @@ private struct ClipboardHistoryPage: View {
             .buttonStyle(.plain)
             .disabled(clipboard.history.isEmpty)
         }
-        .frame(height: 24)
+        .frame(height: ClipboardGalleryLayout.headerHeight)
     }
 
     private var scrollIndex: Int {
@@ -175,7 +193,7 @@ private struct ClipboardHistoryCard: View {
             .padding(.horizontal, 8)
             .frame(height: 25)
         }
-        .frame(width: 150)
+        .frame(width: ClipboardGalleryLayout.cardWidth)
         .background(.white.opacity(isHovered ? 0.14 : 0.085), in: shape)
         .overlay { shape.strokeBorder(.white.opacity(isCopied ? 0.65 : isHovered ? 0.26 : 0.12)) }
         .clipShape(shape)

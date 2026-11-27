@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import Testing
 @testable import Notch
 
@@ -182,6 +182,47 @@ struct NotchTabTests {
         // Stopping at left edge
         model.navigateTab(forward: false)
         #expect(model.selectedTab == nil)
+    }
+
+    @Test func filesAllowsSwipesOverTheRows() {
+        let model = model()
+        let point = CGPoint(x: model.geometry.notchRect.midX, y: model.geometry.notchRect.minY - 80)
+        #expect(!model.canStartTabSwipe(at: point))
+        model.expand()
+        model.select(tab: model.shelf)
+        #expect(model.canStartTabSwipe(at: point))
+        model.navigateTab(forward: true)
+        #expect(model.selectedTabModule === model.notes)
+
+        model.settings.swipeNavigationEnabled = false
+        #expect(!model.canStartTabSwipe(at: point))
+    }
+
+    @Test func clipboardSeparatesHeaderSwipesFromScrollableCards() {
+        let model = model()
+        model.settings.setVisible(.clipboard, true)
+        model.expand()
+        model.select(tab: model.clipboard)
+
+        let notch = model.geometry.notchRect
+        let header = CGPoint(x: notch.midX, y: notch.minY - 8)
+        let cards = CGPoint(x: notch.midX, y: notch.minY - 80)
+        #expect(model.canStartTabSwipe(at: cards), "empty history has nothing to scroll")
+
+        let board = NSPasteboard.withUniqueName()
+        defer { board.releaseGlobally() }
+        for number in 1...4 {
+            board.clearContents()
+            board.setString("Item \(number)", forType: .string)
+            model.clipboard.recordChange(from: board)
+            if number == 3 {
+                #expect(model.canStartTabSwipe(at: cards), "three cards fit in the default width")
+            }
+        }
+        #expect(!model.canStartTabSwipe(at: cards), "overflowing cards retain their horizontal scrolling")
+        #expect(model.canStartTabSwipe(at: header))
+        model.navigateTab(forward: false)
+        #expect(model.selectedTabModule === model.mirror)
     }
 
     @Test func modalPagesDoNotNavigateWithSwipe() {

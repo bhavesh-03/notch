@@ -11,6 +11,8 @@ struct NotchGeometry {
     
     static let defaultExpandedWidth: CGFloat = 540
     static let expandedHeight: CGFloat = 150
+    static let tabPageHorizontalInset: CGFloat = 24
+    static let tabPageTopInset: CGFloat = 2
     /// Extra height for a full-width headline row (the media player) above the module columns.
     static let headlineHeight: CGFloat = 74
 
